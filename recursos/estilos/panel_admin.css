@@ -99,6 +99,16 @@ header {
     overflow-y: auto;
 }
 
+/* Ocultar scrollbar del sidebar pero mantener funcionalidad */
+.sidebar::-webkit-scrollbar {
+    display: none;
+}
+
+.sidebar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
 .sidebar ul {
     list-style: none;
     padding: 1.5rem 0;

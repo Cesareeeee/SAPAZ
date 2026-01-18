@@ -4,73 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SAPAZ - Lecturas</title>
+    <link rel="icon" href="../recursos/imagenes/SAPAZ.jpeg" type="image/jpeg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../recursos/estilos/panel_admin.css">
-    <link rel="stylesheet" href="../recursos/estilos/lecturas.css?v=1.2">
+    <link rel="stylesheet" href="../recursos/estilos/panel_admin.css?v=1.0">
+    <link rel="stylesheet" href="../recursos/estilos/lecturas.css?v=<?php echo time(); ?>">
 </head>
 <body>
-    <!-- Header -->
-    <header>
-        <div class="logo">
-            <button class="menu-toggle" id="menuToggle">
-                <i class="fas fa-bars"></i>
-            </button>
-            <i class="fas fa-tint"></i>
-            <h1>S.A.P.A.Z</h1>
-            <span class="full-name">SISTEMA DE AGUA POTABLE Y ALCANTARILLADO DE ZECALACOAYAN</span>
-        </div>
-        <div class="user-info">
-            <span>Administrador</span>
-            <img src="../recursos/imagenes/SAPAZ.jpeg" alt="Usuario">
-        </div>
-    </header>
-
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-        <ul>
-            <li>
-                <a href="lecturas.php" class="active">
-                    <i class="fas fa-water"></i>
-                    <span>Lecturas</span>
-                </a>
-            </li>
-            <li>
-                <a href="dashboard.php">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span>Dashboard</span>
-                </a>
-            </li>
-            <li>
-                <a href="clientes.php">
-                    <i class="fas fa-users"></i>
-                    <span>Beneficiarios</span>
-                </a>
-            </li>
-            <li>
-                <a href="facturacion.php">
-                    <i class="fas fa-file-invoice-dollar"></i>
-                    <span>Facturación</span>
-                </a>
-            </li>
-            <li>
-                <a href="reportes.php">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Reportes</span>
-                </a>
-            </li>
-            <li>
-                <a href="configuracion.php">
-                    <i class="fas fa-cog"></i>
-                    <span>Configuración</span>
-                </a>
-            </li>
-        </ul>
-    </aside>
+    <!-- Header and Sidebar -->
+    <?php include '../includes/sidebar.php'; ?>
 
     <!-- Main Content -->
     <main class="main-content" id="mainContent">
         <div class="page-content">
-            <h2 class="page-title">Gestión de Lecturas</h2>
+            <h2 class="page-title">Agregar Nueva Lectura</h2>
 
             <!-- Buscador -->
             <div class="search-section">
@@ -92,46 +38,69 @@
             <!-- Formulario de Lectura -->
             <div class="reading-form" id="readingForm" style="display: none;">
                 <div class="form-container">
-                    <h3>Registrar Nueva Lectura</h3>
+                    <h3><i class="fas fa-clipboard-list"></i> Agregar Nueva Lectura</h3>
                     <form id="lecturaForm">
                         <input type="hidden" id="selectedUserId" name="id_usuario">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Cliente</label>
-                                <input type="text" id="clienteNombre" class="form-control" readonly>
+                        <div class="user-info-section">
+                            <div class="info-card">
+                                <i class="fas fa-user info-icon"></i>
+                                <div class="info-content">
+                                    <label class="info-label">Beneficiario</label>
+                                    <span id="clienteNombre" class="info-value"></span>
+                                    <span id="clienteCalle" class="info-subvalue"></span>
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label>Número de Medidor</label>
-                                <input type="text" id="numeroMedidor" class="form-control" readonly>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Lectura Anterior</label>
-                                <input type="text" id="lecturaAnterior" class="form-control" readonly>
-                            </div>
-                            <div class="form-group">
-                                <label>Fecha Anterior</label>
-                                <input type="text" id="fechaAnterior" class="form-control" readonly>
+                            <div class="info-card">
+                                <i class="fas fa-tachometer-alt info-icon"></i>
+                                <div class="info-content">
+                                    <label class="info-label">Número de Medidor</label>
+                                    <span id="numeroMedidor" class="info-value"></span>
+                                </div>
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label>Lectura Actual</label>
-                                <input type="number" id="lecturaActual" name="lectura_actual" class="form-control" step="0.01" required>
+                                <label><i class="fas fa-history"></i> Lectura del Mes Anterior</label>
+                                <span id="lecturaAnterior" class="info-display"></span>
                             </div>
                             <div class="form-group">
-                                <label>Fecha de Lectura</label>
-                                <input type="text" id="fechaLectura" class="form-control" readonly>
+                                <label><i class="fas fa-calendar-alt"></i> Fecha Anterior</label>
+                                <span id="fechaAnterior" class="info-display"></span>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="lecturaActual"><i class="fas fa-water"></i> Lectura Actual *</label>
+                                <input type="number" id="lecturaActual" name="lectura_actual" class="form-control" step="0.01" placeholder="ej. 122.5" required>
+                                <span id="lecturaActualError" class="error-message"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="fechaLectura"><i class="fas fa-calendar-day"></i> Fecha de Lectura *</label>
+                                <input type="date" id="fechaLectura" name="fecha_lectura" class="form-control" required>
+                                <span id="fechaLecturaError" class="error-message"></span>
+                            </div>
+                        </div>
+                        <div class="consumption-section">
+                            <div class="consumption-card">
+                                <i class="fas fa-calculator info-icon"></i>
+                                <div class="info-content">
+                                    <label class="info-label">Metros Cúbicos Consumidos Este Mes</label>
+                                    <span id="consumoCalculado" class="info-value">0.00 m³</span>
+                                </div>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>Observaciones</label>
-                            <textarea id="observaciones" name="observaciones" class="form-control" rows="3"></textarea>
+                            <button type="button" id="toggleObservaciones" class="btn btn-outline-secondary">
+                                <i class="fas fa-plus"></i> Agregar Observaciones (Opcional)
+                            </button>
+                            <div id="observacionesContainer" class="observaciones-container" style="display: none;">
+                                <label for="observaciones"><i class="fas fa-comment"></i> Observaciones</label>
+                                <textarea id="observaciones" name="observaciones" class="form-control" rows="3" placeholder="Ingrese observaciones si es necesario"></textarea>
+                            </div>
                         </div>
                         <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">Guardar Lectura</button>
-                            <button type="button" class="btn btn-outline" id="cancelBtn">Cancelar</button>
+                            <button type="submit" id="submitBtn" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Lectura</button>
+                            <button type="button" class="btn btn-outline" id="cancelBtn"><i class="fas fa-times"></i> Cancelar</button>
                         </div>
                     </form>
                 </div>
@@ -140,17 +109,17 @@
     </main>
 
     <!-- Notification -->
-    <div class="notification" id="notification">
-        <div class="notification-icon success">
-            <i class="fas fa-check"></i>
-        </div>
-        <div class="notification-content">
-            <div class="notification-title">Éxito</div>
-            <div class="notification-message">Operación completada</div>
+    <!-- Custom Modal -->
+    <div class="custom-modal-backdrop" id="customModalBackdrop">
+        <div class="custom-modal">
+            <div class="modal-icon" id="modalIcon"></div>
+            <div class="modal-title" id="modalTitle"></div>
+            <div class="modal-message" id="modalMessage"></div>
+            <div class="modal-actions" id="modalActions"></div>
         </div>
     </div>
 
     <script src="../recursos/scripts/panel_admin.js"></script>
-    <script src="../recursos/scripts/lecturas.js"></script>
+    <script src="../recursos/scripts/lecturas.js?v=23"></script>
 </body>
 </html>

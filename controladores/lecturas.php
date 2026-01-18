@@ -53,10 +53,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $id_usuario = $_POST['id_usuario'] ?? '';
     $lectura_actual = trim($_POST['lectura_actual'] ?? '');
+    $fecha_lectura = $_POST['fecha_lectura'] ?? '';
     $observaciones = trim($_POST['observaciones'] ?? '');
     $id_usuario_sistema = 1; // Asumiendo admin por defecto
 
-    if (empty($id_usuario) || empty($lectura_actual)) {
+    if (empty($id_usuario) || empty($lectura_actual) || empty($fecha_lectura)) {
         echo json_encode(['success' => false, 'message' => 'Campos requeridos']);
         exit;
     }
@@ -73,7 +74,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $consumo = $lectura_actual - $lectura_anterior;
-    $fecha_lectura = date('Y-m-d');
 
     // Insertar nueva lectura
     $stmt = $conn->prepare("INSERT INTO lecturas (id_usuario, fecha_lectura, lectura_anterior, lectura_actual, consumo_m3, id_usuario_sistema, observaciones) VALUES (?, ?, ?, ?, ?, ?, ?)");
