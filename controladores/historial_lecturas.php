@@ -12,10 +12,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
         $barrio = $_GET['barrio'] ?? null;
         $fecha_inicio = $_GET['fecha_inicio'] ?? null;
         $fecha_fin = $_GET['fecha_fin'] ?? null;
-        $dia = $_GET['dia'] ?? null;
         $mes = $_GET['mes'] ?? null;
         $anio = $_GET['anio'] ?? null;
         $consumo_tipo = $_GET['consumo_tipo'] ?? null;
+        $orden = strtoupper($_GET['orden'] ?? 'DESC');
+        if (!in_array($orden, ['ASC', 'DESC'])) {
+            $orden = 'DESC';
+        }
         $pagina = intval($_GET['pagina'] ?? 1);
         $limite = intval($_GET['limite'] ?? 10);
         $offset = ($pagina - 1) * $limite;
@@ -55,20 +58,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
             $types .= 's';
         }
 
-        if ($dia) {
-            $where_clauses[] = 'DAY(l.fecha_lectura) = ?';
-            $params[] = $dia;
-            $types .= 's';
-        }
-
         if ($mes) {
-            $where_clauses[] = 'MONTH(l.fecha_lectura) = ?';
-            $params[] = $mes;
+            $where_clauses[] = 'SUBSTRING(l.fecha_lectura, 6, 2) = ?';
+            $params[] = str_pad($mes, 2, '0', STR_PAD_LEFT);
             $types .= 's';
         }
 
         if ($anio) {
-            $where_clauses[] = 'YEAR(l.fecha_lectura) = ?';
+            $where_clauses[] = 'SUBSTRING(l.fecha_lectura, 1, 4) = ?';
             $params[] = $anio;
             $types .= 's';
         }
@@ -95,13 +92,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
         $total = $total_result['total'];
 
         // Obtener lecturas
-        $sql = "SELECT l.id_lectura, l.fecha_lectura, l.lectura_anterior, l.lectura_actual, l.consumo_m3, l.observaciones,
+        $sql = "SELECT l.id_lectura, l.fecha_lectura, l.lectura_anterior, l.lectura_actual, l.consumo_m3, l.observaciones, l.created_at,
                         us.nombre, us.no_medidor, d.calle, d.barrio
                  FROM lecturas l
                  JOIN usuarios_servicio us ON l.id_usuario = us.id_usuario
                  JOIN domicilios d ON us.id_domicilio = d.id_domicilio
                  $where_sql
-                 ORDER BY l.fecha_lectura DESC
+                 ORDER BY l.fecha_lectura $orden
                  LIMIT ? OFFSET ?";
         $stmt = $conn->prepare($sql);
         $params[] = $limite;
@@ -174,7 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
             exit;
         }
 
-        $sql = "SELECT l.id_lectura, l.fecha_lectura, l.lectura_anterior, l.lectura_actual, l.consumo_m3, l.observaciones,
+        $sql = "SELECT l.id_lectura, l.fecha_lectura, l.lectura_anterior, l.lectura_actual, l.consumo_m3, l.observaciones, l.created_at,
                        us.nombre, us.no_medidor, d.calle, d.barrio
                 FROM lecturas l
                 JOIN usuarios_servicio us ON l.id_usuario = us.id_usuario

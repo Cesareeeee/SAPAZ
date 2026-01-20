@@ -41,17 +41,21 @@ document.addEventListener('DOMContentLoaded', function () {
     const viewConsumo = document.getElementById('viewConsumo');
     const viewRegistradoPor = document.getElementById('viewRegistradoPor');
     const viewObservaciones = document.getElementById('viewObservaciones');
+    const viewAgregado = document.getElementById('viewAgregado');
 
     // Filtros elements
     const inputBusqueda = document.getElementById('inputBusqueda');
     const btnClearSearch = document.getElementById('btnClearSearch');
     const btnConsumoAlto = document.getElementById('btnConsumoAlto');
     const btnConsumoAlterado = document.getElementById('btnConsumoAlterado');
-    const filtroDia = document.getElementById('filtroDia');
     const filtroMes = document.getElementById('filtroMes');
     const filtroAnio = document.getElementById('filtroAnio');
     const filtroCalle = document.getElementById('filtroCalle');
     const filtroBarrio = document.getElementById('filtroBarrio');
+    const toggleFecha = document.getElementById('toggleFecha');
+    const fechaContent = document.getElementById('fechaContent');
+    const toggleUbicacion = document.getElementById('toggleUbicacion');
+    const ubicacionContent = document.getElementById('ubicacionContent');
     const btnLimpiarFiltros = document.getElementById('btnLimpiarFiltros');
     const filtrosActivos = document.getElementById('filtrosActivos');
     const filtrosActivosLista = document.getElementById('filtrosActivosLista');
@@ -65,23 +69,15 @@ document.addEventListener('DOMContentLoaded', function () {
     let filtrosEstado = {
         busqueda: '',
         consumoTipo: '',
-        dia: '',
         mes: '',
         anio: '',
         calle: '',
-        barrio: ''
+        barrio: '',
+        orden: 'desc'
     };
 
     // Inicializar selectores de fecha
     function inicializarFechas() {
-        // Poblar días (1-31)
-        for (let i = 1; i <= 31; i++) {
-            const option = document.createElement('option');
-            option.value = i;
-            option.textContent = i;
-            filtroDia.appendChild(option);
-        }
-
         // Poblar años (últimos 5 años + año actual + próximo año)
         const anioActual = new Date().getFullYear();
         for (let i = anioActual + 1; i >= anioActual - 5; i--) {
@@ -143,9 +139,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (filtrosEstado.consumoTipo) {
             params.append('consumo_tipo', filtrosEstado.consumoTipo);
         }
-        if (filtrosEstado.dia) {
-            params.append('dia', filtrosEstado.dia);
-        }
         if (filtrosEstado.mes) {
             params.append('mes', filtrosEstado.mes);
         }
@@ -158,6 +151,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (filtrosEstado.barrio) {
             params.append('barrio', filtrosEstado.barrio);
         }
+        params.append('orden', filtrosEstado.orden);
 
         fetch(`../controladores/historial_lecturas.php?${params}`)
             .then(response => response.json())
@@ -219,7 +213,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 <div class="card-value">${lectura.calle || 'N/A'}${lectura.barrio ? ', ' + lectura.barrio : ''}</div>
                             </div>
                         </div>
-                        ${lectura.observaciones ? `<div class="card-observaciones">${lectura.observaciones}</div>` : ''}
+                        ${lectura.observaciones ? `<div class="card-observaciones" style="background-color: #e3f2fd; border: 1px solid #2196f3; padding: 10px; border-radius: 4px; margin-top: 5px;"><strong style="color: #1976d2; font-weight: bold;">OBSERVACIONES:</strong> <span style="color: #dc2626; font-size: 1.1em;">${lectura.observaciones}</span></div>` : ''}
                     </div>
                     <div class="card-actions-external">
                         <button class="btn-view" data-id="${lectura.id_lectura}" title="Ver detalles"><i class="fas fa-eye"></i></button>
@@ -262,9 +256,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (filtrosEstado.consumoTipo === 'negativo') {
             tags.push({ texto: 'Medidor Alterado', tipo: 'consumoTipo' });
         }
-        if (filtrosEstado.dia) {
-            tags.push({ texto: `Día: ${filtrosEstado.dia}`, tipo: 'dia' });
-        }
         if (filtrosEstado.mes) {
             const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
             tags.push({ texto: `Mes: ${meses[parseInt(filtrosEstado.mes) - 1]}`, tipo: 'mes' });
@@ -277,6 +268,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (filtrosEstado.barrio) {
             tags.push({ texto: `Barrio: ${filtrosEstado.barrio}`, tipo: 'barrio' });
+        }
+        if (filtrosEstado.orden === 'desc') {
+            tags.push({ texto: 'Recientes primero', tipo: 'orden' });
         }
 
         if (tags.length > 0) {
@@ -338,12 +332,6 @@ document.addEventListener('DOMContentLoaded', function () {
         cargarHistorial(1);
     });
 
-    filtroDia.addEventListener('change', function () {
-        filtrosEstado.dia = this.value;
-        actualizarFiltrosActivos();
-        cargarHistorial(1);
-    });
-
     filtroMes.addEventListener('change', function () {
         filtrosEstado.mes = this.value;
         actualizarFiltrosActivos();
@@ -368,27 +356,47 @@ document.addEventListener('DOMContentLoaded', function () {
         cargarHistorial(1);
     });
 
+    const filtroOrden = document.getElementById('filtroOrden');
+    filtroOrden.addEventListener('change', function () {
+        filtrosEstado.orden = this.value;
+        actualizarFiltrosActivos();
+        cargarHistorial(1);
+    });
+
+    // Toggle buttons
+    toggleFecha.addEventListener('click', function () {
+        const isOpen = fechaContent.style.display !== 'none';
+        fechaContent.style.display = isOpen ? 'none' : 'grid';
+        this.classList.toggle('active');
+    });
+
+    toggleUbicacion.addEventListener('click', function () {
+        const isOpen = ubicacionContent.style.display !== 'none';
+        ubicacionContent.style.display = isOpen ? 'none' : 'grid';
+        this.classList.toggle('active');
+    });
+
     btnLimpiarFiltros.addEventListener('click', function () {
         // Limpiar todos los filtros
         filtrosEstado = {
             busqueda: '',
             consumoTipo: '',
-            dia: '',
             mes: '',
             anio: '',
             calle: '',
-            barrio: ''
+            barrio: '',
+            orden: 'asc'
         };
 
         inputBusqueda.value = '';
         btnClearSearch.style.display = 'none';
         btnConsumoAlto.classList.remove('active');
         btnConsumoAlterado.classList.remove('active');
-        filtroDia.value = '';
         filtroMes.value = '';
         filtroAnio.value = '';
         filtroCalle.value = '';
         filtroBarrio.value = '';
+        filtroOrden.value = 'desc';
 
         actualizarFiltrosActivos();
         cargarHistorial(1);
@@ -410,10 +418,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     btnConsumoAlto.classList.remove('active');
                     btnConsumoAlterado.classList.remove('active');
                     break;
-                case 'dia':
-                    filtrosEstado.dia = '';
-                    filtroDia.value = '';
-                    break;
                 case 'mes':
                     filtrosEstado.mes = '';
                     filtroMes.value = '';
@@ -430,6 +434,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     filtrosEstado.barrio = '';
                     filtroBarrio.value = '';
                     break;
+                case 'orden':
+                    filtrosEstado.orden = 'desc';
+                    filtroOrden.value = 'desc';
+                    break;
             }
 
             actualizarFiltrosActivos();
@@ -439,15 +447,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Event delegation para botones de acción
     historialContainer.addEventListener('click', function (e) {
-        if (e.target.closest('.btn-view')) {
-            const id = e.target.closest('.btn-view').dataset.id;
-            mostrarModalVista(id);
-        } else if (e.target.closest('.btn-edit')) {
-            const id = e.target.closest('.btn-edit').dataset.id;
-            mostrarModalEdicion(id);
-        } else if (e.target.closest('.btn-delete')) {
-            const id = e.target.closest('.btn-delete').dataset.id;
-            confirmarEliminacion(id);
+        const cardWrapper = e.target.closest('.card-wrapper');
+        if (cardWrapper) {
+            if (e.target.closest('.btn-edit')) {
+                const id = e.target.closest('.btn-edit').dataset.id;
+                mostrarModalEdicion(id);
+            } else if (e.target.closest('.btn-delete')) {
+                const id = e.target.closest('.btn-delete').dataset.id;
+                confirmarEliminacion(id);
+            } else {
+                // Cualquier otro clic en la card, mostrar vista
+                const btnView = cardWrapper.querySelector('.btn-view');
+                if (btnView) {
+                    const id = btnView.dataset.id;
+                    mostrarModalVista(id);
+                }
+            }
         }
     });
 
@@ -469,7 +484,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(data => {
                 if (data.success) {
                     const lectura = data.lectura;
-                    const fecha = new Date(lectura.fecha_lectura).toLocaleString('es-ES');
+                    const fecha = new Date(lectura.fecha_lectura).toLocaleDateString('es-ES');
                     const consumoClass = lectura.consumo_m3 < 0 ? 'consumo-negativo' : lectura.consumo_m3 > 30 ? 'consumo-alto' : 'consumo-normal';
 
                     viewNombre.textContent = lectura.nombre;
@@ -482,6 +497,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     viewLecturaAnterior.textContent = `${parseFloat(lectura.lectura_anterior).toFixed(2)} m³`;
                     viewLecturaActual.textContent = `${parseFloat(lectura.lectura_actual).toFixed(2)} m³`;
                     viewObservaciones.textContent = lectura.observaciones || 'Sin observaciones';
+                    viewAgregado.textContent = new Date(lectura.created_at).toLocaleString('es-ES');
 
                     viewModalBackdrop.style.display = 'flex';
                 } else {
@@ -573,7 +589,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (type === 'success' || type === 'error') {
             setTimeout(() => {
                 closeModal();
-            }, 4000);
+            }, 5000);
         }
     }
 

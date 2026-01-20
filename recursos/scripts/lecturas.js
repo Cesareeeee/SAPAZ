@@ -94,11 +94,11 @@ document.addEventListener('DOMContentLoaded', function () {
         modalBackdrop.classList.add('show');
         modalBackdrop.style.display = 'flex';
 
-        // Auto-cerrar después de 4 segundos para success y error
-        if (type === 'success' || type === 'error') {
+        // Auto-cerrar después de 60 segundos solo para error
+        if (type === 'error') {
             setTimeout(() => {
                 closeModal();
-            }, 10000);
+            }, 60000);
         }
     }
 
@@ -190,27 +190,55 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (data.success) {
                     document.getElementById('lecturaAnterior').textContent = data.lectura_anterior;
                     document.getElementById('fechaAnterior').textContent = data.fecha_anterior || 'Primera lectura';
+
+                    // Verificar si ya tiene lectura este mes
+                    if (data.fecha_anterior) {
+                        const fechaAnterior = new Date(data.fecha_anterior);
+                        const now = new Date();
+                        if (fechaAnterior.getMonth() === now.getMonth() && fechaAnterior.getFullYear() === now.getFullYear()) {
+                            // Ya tiene lectura este mes
+                            showModal(
+                                'Usuario con Lectura Reciente',
+                                'Este usuario ya tiene un registro de lectura este mes. ¿Desea agregar otra lectura?',
+                                'warning',
+                                () => {
+                                    // Continuar
+                                    mostrarFormularioLectura();
+                                },
+                                () => {
+                                    // Cancelar
+                                    // No hacer nada, el formulario no se muestra
+                                }
+                            );
+                            return; // Salir para no mostrar formulario automáticamente
+                        }
+                    }
                 } else {
                     document.getElementById('lecturaAnterior').textContent = '0';
                     document.getElementById('fechaAnterior').textContent = 'Primera lectura';
                 }
 
-                // Fecha actual
-                const today = new Date();
-                const fechaFormateada = today.toISOString().split('T')[0];
-                document.getElementById('fechaLectura').value = fechaFormateada;
-
-                // Calcular consumo inicial
-                calcularConsumo();
-
                 // Mostrar formulario
-                readingForm.style.display = 'block';
-                readingForm.scrollIntoView({ behavior: 'smooth' });
+                mostrarFormularioLectura();
             })
             .catch(error => {
                 console.error('Error:', error);
                 showModal('Error', 'Error al obtener datos', 'error');
             });
+    }
+
+    function mostrarFormularioLectura() {
+        // Fecha actual
+        const today = new Date();
+        const fechaFormateada = today.toISOString().split('T')[0];
+        document.getElementById('fechaLectura').value = fechaFormateada;
+
+        // Calcular consumo inicial
+        calcularConsumo();
+
+        // Mostrar formulario
+        readingForm.style.display = 'block';
+        readingForm.scrollIntoView({ behavior: 'smooth' });
     }
 
     // Elementos
@@ -461,4 +489,337 @@ document.addEventListener('DOMContentLoaded', function () {
         observacionesContainer.style.display = 'none';
         toggleObservaciones.innerHTML = '<i class="fas fa-plus"></i> Agregar Observaciones (Opcional)';
     });
+
+    // Función para detectar si es dispositivo móvil
+    function isMobileDevice() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+               window.innerWidth <= 768;
+    }
+
+    // Mostrar botón de cámara (disponible en todos los dispositivos con cámara)
+    const cameraBtn = document.getElementById('cameraBtn');
+    // cameraBtn.style.display = 'flex'; // Temporalmente oculto
+
+    // Evento del botón de cámara
+    // cameraBtn.addEventListener('click', function () {
+    //     console.log('Botón de cámara clickeado');
+    //     startCameraScan();
+    // });
+
+    // Nueva funcionalidad: Lista de beneficiarios sin lectura
+
+    const toggleBeneficiariosSection = document.getElementById('toggleBeneficiariosSection');
+    const beneficiariosSection = document.getElementById('beneficiariosSection');
+    const beneficiariosContainer = document.getElementById('beneficiariosContainer');
+    const filtroTipoBenef = document.getElementById('filtroTipoBenef');
+    const filtroValorBenef = document.getElementById('filtroValorBenef');
+    const btnLimpiarFiltrosBenef = document.getElementById('btnLimpiarFiltrosBenef');
+    const btnPrevBenef = document.getElementById('btnPrevBenef');
+    const btnNextBenef = document.getElementById('btnNextBenef');
+    const pageInfoBenef = document.getElementById('pageInfoBenef');
+
+    let paginaActualBenef = 1;
+    let totalPaginasBenef = 1;
+    const limitePorPaginaBenef = 10;
+    let filtrosBenef = { tipo: '', valor: '' };
+
+    // Toggle sección de beneficiarios
+    toggleBeneficiariosSection.addEventListener('click', function() {
+        if (beneficiariosSection.style.display === 'none') {
+            beneficiariosSection.style.display = 'block';
+            this.innerHTML = '<i class="fas fa-times"></i> Ocultar Lista';
+            cargarBeneficiarios();
+            cargarFiltrosBenef();
+        } else {
+            beneficiariosSection.style.display = 'none';
+            this.innerHTML = '<i class="fas fa-users"></i> Ver Beneficiarios Sin Lectura';
+        }
+    });
+
+    // Cargar filtros
+    function cargarFiltrosBenef() {
+        // No cargar inicialmente, se carga al seleccionar tipo
+    }
+
+    // Evento cambio de tipo
+    filtroTipoBenef.addEventListener('change', function() {
+        const tipo = this.value;
+        filtroValorBenef.disabled = tipo === '';
+        filtroValorBenef.innerHTML = '<option value="">Seleccione...</option>';
+
+        if (tipo === 'calle') {
+            fetch('../controladores/lecturas.php?action=get_calles')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        data.calles.forEach(calle => {
+                            const option = document.createElement('option');
+                            option.value = calle;
+                            option.textContent = calle;
+                            filtroValorBenef.appendChild(option);
+                        });
+                    }
+                });
+        } else if (tipo === 'barrio') {
+            fetch('../controladores/lecturas.php?action=get_barrios')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        data.barrios.forEach(barrio => {
+                            const option = document.createElement('option');
+                            option.value = barrio;
+                            option.textContent = barrio;
+                            filtroValorBenef.appendChild(option);
+                        });
+                    }
+                });
+        }
+
+        // Aplicar filtro automáticamente
+        filtrosBenef.tipo = tipo;
+        filtrosBenef.valor = '';
+        paginaActualBenef = 1;
+        cargarBeneficiarios();
+    });
+
+    // Evento cambio de valor
+    filtroValorBenef.addEventListener('change', function() {
+        filtrosBenef.valor = this.value;
+        paginaActualBenef = 1;
+        cargarBeneficiarios();
+    });
+
+    // Limpiar filtros
+    btnLimpiarFiltrosBenef.addEventListener('click', function() {
+        filtroTipoBenef.value = '';
+        filtroValorBenef.value = '';
+        filtroValorBenef.disabled = true;
+        filtroValorBenef.innerHTML = '<option value="">Seleccione tipo primero</option>';
+        filtrosBenef.tipo = '';
+        filtrosBenef.valor = '';
+        paginaActualBenef = 1;
+        cargarBeneficiarios();
+    });
+
+    // Navegación
+    btnPrevBenef.addEventListener('click', function() {
+        if (paginaActualBenef > 1) {
+            paginaActualBenef--;
+            cargarBeneficiarios();
+        }
+    });
+
+    btnNextBenef.addEventListener('click', function() {
+        if (paginaActualBenef < totalPaginasBenef) {
+            paginaActualBenef++;
+            cargarBeneficiarios();
+        }
+    });
+
+    // Cargar beneficiarios
+    function cargarBeneficiarios() {
+        const params = new URLSearchParams({
+            action: 'get_users_without_reading',
+            pagina: paginaActualBenef,
+            limite: limitePorPaginaBenef
+        });
+
+        if (filtrosBenef.tipo === 'calle') {
+            params.append('calle', filtrosBenef.valor);
+        } else if (filtrosBenef.tipo === 'barrio') {
+            params.append('barrio', filtrosBenef.valor);
+        }
+
+        fetch(`../controladores/lecturas.php?${params}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    mostrarBeneficiarios(data.usuarios);
+                    actualizarNavegacionBenef(data.total);
+                } else {
+                    beneficiariosContainer.innerHTML = '<p>No se pudieron cargar los beneficiarios</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                beneficiariosContainer.innerHTML = '<p>Error al cargar beneficiarios</p>';
+            });
+    }
+
+    // Mostrar beneficiarios
+    function mostrarBeneficiarios(usuarios) {
+        if (usuarios.length === 0) {
+            beneficiariosContainer.innerHTML = '<p>No hay beneficiarios sin lectura en este mes</p>';
+            return;
+        }
+
+        let html = '';
+        usuarios.forEach(usuario => {
+            html += `
+                <div class="beneficiario-card" data-id="${usuario.id_usuario}" data-nombre="${usuario.nombre}" data-medidor="${usuario.no_medidor}" data-calle="${usuario.calle}" data-barrio="${usuario.barrio}">
+                    <div class="beneficiario-header">
+                        <div class="beneficiario-icon">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="beneficiario-info">
+                            <h4>${usuario.nombre}</h4>
+                            <p>Medidor: ${usuario.no_medidor}</p>
+                        </div>
+                    </div>
+                    <div class="beneficiario-details">
+                        <div class="beneficiario-detail">
+                            <span class="beneficiario-label">Calle:</span>
+                            <span class="beneficiario-value">${usuario.calle || 'N/A'}</span>
+                        </div>
+                        <div class="beneficiario-detail">
+                            <span class="beneficiario-label">Barrio:</span>
+                            <span class="beneficiario-value">${usuario.barrio || 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        beneficiariosContainer.innerHTML = html;
+
+        // Agregar eventos a las cards
+        document.querySelectorAll('.beneficiario-card').forEach(card => {
+            card.addEventListener('click', function() {
+                selectUser(this.dataset.id, this.dataset.nombre, this.dataset.medidor, this.dataset.calle + (this.dataset.barrio ? ', ' + this.dataset.barrio : ''));
+                // Ocultar sección de beneficiarios y mostrar formulario
+                beneficiariosSection.style.display = 'none';
+                toggleBeneficiariosSection.innerHTML = '<i class="fas fa-users"></i> Ver Beneficiarios Sin Lectura';
+            });
+        });
+    }
+
+    // Actualizar navegación
+    function actualizarNavegacionBenef(total) {
+        totalPaginasBenef = Math.ceil(total / limitePorPaginaBenef);
+        pageInfoBenef.textContent = `Página ${paginaActualBenef} de ${totalPaginasBenef}`;
+
+        btnPrevBenef.classList.toggle('nav-btn-disabled', paginaActualBenef === 1);
+        btnNextBenef.classList.toggle('nav-btn-disabled', paginaActualBenef === totalPaginasBenef);
+    }
+
+    // Función para iniciar escaneo con cámara
+    function startCameraScan() {
+        console.log('Iniciando escaneo con cámara');
+
+        // Crear input file oculto para capturar imagen
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.capture = 'environment'; // Para móviles, usar cámara trasera
+        fileInput.style.display = 'none';
+
+        fileInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        // Crear canvas para procesar
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+
+                        // Mostrar modal de procesamiento
+                        showProcessingModal(canvas);
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Agregar al DOM y trigger click
+        document.body.appendChild(fileInput);
+        fileInput.click();
+
+        // Limpiar después de un tiempo
+        setTimeout(() => {
+            if (fileInput.parentNode) {
+                fileInput.parentNode.removeChild(fileInput);
+            }
+        }, 1000);
+    }
+
+    // Función para mostrar modal de procesamiento
+    function showProcessingModal(canvas) {
+        const processingModal = document.createElement('div');
+        processingModal.className = 'camera-modal';
+        processingModal.innerHTML = `
+            <div class="camera-modal-content">
+                <div class="camera-modal-header">
+                    <h3>Procesando imagen...</h3>
+                    <button class="camera-close-btn" id="processingCloseBtn"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="camera-modal-body">
+                    <div class="processing-preview">
+                        <img id="previewImg" src="${canvas.toDataURL()}" style="max-width: 100%; max-height: 300px; border-radius: 10px;">
+                    </div>
+                    <div class="camera-status" id="processingStatus">Analizando la imagen...</div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(processingModal);
+
+        const closeBtn = processingModal.querySelector('#processingCloseBtn');
+        const statusDiv = processingModal.querySelector('#processingStatus');
+
+        closeBtn.addEventListener('click', function() {
+            if (processingModal.parentNode) {
+                processingModal.parentNode.removeChild(processingModal);
+            }
+        });
+
+        // Procesar OCR
+        processOCR(canvas, statusDiv, processingModal);
+    }
+
+    // Función para procesar OCR
+    function processOCR(canvas, statusDiv, modal) {
+        statusDiv.textContent = 'Analizando la imagen con OCR...';
+
+        Tesseract.recognize(
+            canvas,
+            'eng',
+            {
+                logger: m => console.log(m)
+            }
+        ).then(({ data: { text } }) => {
+            console.log('Texto reconocido:', text);
+            statusDiv.textContent = 'Procesamiento completado.';
+
+            // Extraer números del texto (asumiendo que el número del medidor es una secuencia de dígitos)
+            const numbers = text.match(/\d+/g);
+            if (numbers && numbers.length > 0) {
+                // Tomar el primer número encontrado (o el más largo si hay varios)
+                const medidorNumber = numbers.reduce((a, b) => a.length > b.length ? a : b);
+                searchInput.value = medidorNumber;
+                searchInput.focus();
+                // Trigger input event para búsqueda automática
+                searchInput.dispatchEvent(new Event('input'));
+                showModal('¡Número detectado!', `Se detectó el número: ${medidorNumber}`, 'success');
+            } else {
+                showModal('No se detectó número', 'No se pudo detectar un número en la imagen. Intenta nuevamente con una imagen más clara del medidor.', 'warning');
+            }
+
+            // Cerrar modal
+            if (modal && modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+            }
+        }).catch(error => {
+            console.error('Error en OCR:', error);
+            statusDiv.textContent = 'Error en el procesamiento.';
+            showModal('Error', 'Error al procesar la imagen. Inténtalo de nuevo.', 'error');
+            if (modal && modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+            }
+        });
+    }
 });

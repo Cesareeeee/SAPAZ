@@ -8,7 +8,8 @@ require_once '../controladores/beneficiarios.php';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SAPAZ - Beneficiarios</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../recursos/estilos/panel_admin.css?v=1.0">
+    <link rel="stylesheet" href="../recursos/estilos/panel_admin.css?v=1.30">
+    <link rel="stylesheet" href="../recursos/estilos/clientes.css?v=1.333320">
 </head>
 <body>
    
@@ -32,7 +33,7 @@ require_once '../controladores/beneficiarios.php';
             <div id="addSection" class="tab-content">
                 <div class="form-container">
                 <form id="beneficiaryForm">
-                    <div class="form-row">
+                    <div class="form-row"> 
                         <div class="form-group">
                             <label for="beneficiaryName">Nombre Completo</label>
                             <input type="text" class="form-control" id="beneficiaryName" name="beneficiaryName" placeholder="Nombre del beneficiario">
@@ -86,24 +87,40 @@ require_once '../controladores/beneficiarios.php';
                         </div>
                         <div class="search-box">
                             <i class="fas fa-search"></i>
-                            <input type="text" placeholder="Buscar por nombre o medidor...">
+                            <input type="text" id="searchInput" placeholder="Buscar por nombre o medidor...">
                         </div>
                     </div>
                 </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 80px;"># Beneficiario</th>
-                            <th>Nombre</th>
-                            <th class="hidden-mobile">Calle</th>
-                            <th class="hidden-mobile">Contrato</th>
-                            <th>Medidor</th>
-                            <th class="hidden-mobile">Fecha Alta</th>
-                            <th class="hidden-mobile">Estado</th>
-                            <th class="hidden-mobile">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="beneficiariesTableBody">
+                <div class="cards-section">
+                    <div class="beneficiary-header">
+                        <div class="card-body">
+                            <div class="card-item">
+                                <div class="card-label"># Beneficiario</div>
+                            </div>
+                            <div class="card-item">
+                                <div class="card-label">Nombre</div>
+                            </div>
+                            <div class="card-item">
+                                <div class="card-label">Calle</div>
+                            </div>
+                            <div class="card-item">
+                                <div class="card-label">Contrato</div>
+                            </div>
+                            <div class="card-item">
+                                <div class="card-label">Medidor</div>
+                            </div>
+                            <div class="card-item">
+                                <div class="card-label">Fecha Alta</div>
+                            </div>
+                            <div class="card-item">
+                                <div class="card-label">Estado</div>
+                            </div>
+                            <div class="card-item">
+                                <div class="card-label">Acciones</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="cards-container" id="beneficiariesTableBody">
                         <?php
                         require_once '../includes/conexion.php';
                         $sql = "SELECT us.*, d.calle FROM usuarios_servicio us JOIN domicilios d ON us.id_domicilio = d.id_domicilio ORDER BY us.fecha_alta DESC";
@@ -112,27 +129,52 @@ require_once '../controladores/beneficiarios.php';
                             while($row = $result->fetch_assoc()) {
                                 $estado = $row['activo'] ? 'Activo' : 'Inactivo';
                                 $statusClass = $row['activo'] ? 'paid' : 'pending';
-                                echo "<tr data-id='{$row['id_usuario']}' class='beneficiary-row'>
-                                        <td>{$row['id_usuario']}</td>
-                                        <td>{$row['nombre']}</td>
-                                        <td>{$row['calle']}</td>
-                                        <td>{$row['no_contrato']}</td>
-                                        <td>{$row['no_medidor']}</td>
-                                        <td>{$row['fecha_alta']}</td>
-                                        <td><span class='status {$statusClass}'>{$estado}</span></td>
-                                        <td>
+                                echo "<div data-id='{$row['id_usuario']}' class='card-wrapper beneficiary-row'>
+                                        <div class='beneficiary-card'>
+                                            <div class='card-body'>
+                                                <div class='card-item'>
+                                                    <div class='card-label'># Beneficiario</div>
+                                                    <div class='card-value'>{$row['id_usuario']}</div>
+                                                </div>
+                                                <div class='card-item'>
+                                                    <div class='card-label'>Nombre</div>
+                                                    <div class='card-value beneficiary-name' style='color: #000000;'>{$row['nombre']}</div>
+                                                </div>
+                                                <div class='card-item'>
+                                                    <div class='card-label'>Calle</div>
+                                                    <div class='card-value'>{$row['calle']}</div>
+                                                </div>
+                                                <div class='card-item'>
+                                                    <div class='card-label'>Contrato</div>
+                                                    <div class='card-value'>{$row['no_contrato']}</div>
+                                                </div>
+                                                <div class='card-item'>
+                                                    <div class='card-label'>Medidor</div>
+                                                    <div class='card-value beneficiary-medidor' style='color: #000000;'>{$row['no_medidor']}</div>
+                                                </div>
+                                                <div class='card-item'>
+                                                    <div class='card-label'>Fecha Alta</div>
+                                                    <div class='card-value'>{$row['fecha_alta']}</div>
+                                                </div>
+                                                <div class='card-item'>
+                                                    <div class='card-label'>Estado</div>
+                                                    <div class='card-value'><span class='status {$statusClass}'>{$estado}</span></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class='card-actions-external'>
                                             <button class='btn btn-outline edit-btn' data-id='{$row['id_usuario']}' style='margin-right: 2px;'><i class='fas fa-edit'></i></button>
                                             <button class='btn btn-outline delete-btn' data-id='{$row['id_usuario']}'><i class='fas fa-trash'></i></button>
-                                        </td>
-                                      </tr>";
+                                        </div>
+                                      </div>";
                             }
                         } else {
-                            echo "<tr id='noResultsRow'><td colspan='8'>No hay beneficiarios registrados</td></tr>";
+                            echo "<div id='noResultsRow' class='no-results'>No hay beneficiarios registrados</div>";
                         }
                         $conn->close();
                         ?>
-                    </tbody>
-                </table>
+                    </div>
+                </div>
                 <div id="noSearchResults" style="display: none; text-align: center; padding: 2rem; color: var(--text-color);">
                     No se encontraron beneficiarios que coincidan con la búsqueda.
                 </div>
@@ -152,56 +194,66 @@ require_once '../controladores/beneficiarios.php';
         </div>
     </div>
 
-    <!-- Modal -->
-    <div class="modal" id="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-title">Editar Beneficiario</div>
-                <button class="modal-close" id="modalClose">
-                    <i class="fas fa-times"></i>
-                </button>
+    <!-- Edit Modal -->
+    <div class="custom-modal-backdrop" id="editModalBackdrop">
+        <div class="custom-modal">
+            <div class="edit-modal-header" style="text-align: left; margin-bottom: 20px;">
+                <h3 class="modal-title">Editar Beneficiario</h3>
+                <button class="edit-close-btn" id="editCloseBtn" style="position: absolute; right: 20px; top: 20px; background: none; border: none; font-size: 1.5rem; cursor: pointer;"><i class="fas fa-times"></i></button>
             </div>
-            <div class="modal-body">
-                <form id="editForm">
+            <form id="editForm" class="edit-modal-form">
+                <!-- Información del Usuario (Solo lectura) -->
+                <div class="edit-info-section" style="margin-bottom: 15px; text-align: left;">
+                    <div class="edit-info-item full">
+                        <span class="edit-info-label" style="font-weight: bold; color: var(--primary-color);">Nombre Anterior:</span>
+                        <span class="edit-info-value" id="previousName" style="display: block; margin-top: 5px; color: #555;"></span>
+                    </div>
+                </div>
+
+                <!-- Campos Editables -->
+                <div class="edit-editable-section" style="text-align: left;">
                     <input type="hidden" id="editId" name="id">
-                    <div class="form-group">
-                        <label for="editBeneficiaryName">Nombre Completo</label>
-                        <span id="previousName" style="color: #888; font-size: 0.9em; margin-bottom: 2px; display: block;"></span>
-                        <input type="text" class="form-control" id="editBeneficiaryName" name="beneficiaryName" placeholder="Nombre del beneficiario">
+                    <div class="edit-field-group full" style="margin-bottom: 15px;">
+                        <label for="editBeneficiaryName" style="display: block; margin-bottom: 5px;">Nombre Completo</label>
+                        <input type="text" class="form-control" id="editBeneficiaryName" name="beneficiaryName" placeholder="Nombre del beneficiario" style="width: 100%;">
                     </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="editContractNumber">Número de Contrato</label>
-                            <input type="number" class="form-control" id="editContractNumber" name="contractNumber" placeholder="Número de contrato">
-                        </div>
-                        <div class="form-group">
-                            <label for="editMeterNumber">Número de Medidor</label>
-                            <input type="number" class="form-control" id="editMeterNumber" name="meterNumber" placeholder="Número de medidor">
-                        </div>
+                    <div class="edit-field-group" style="margin-bottom: 15px;">
+                        <label for="editContractNumber" style="display: block; margin-bottom: 5px;">Número de Contrato</label>
+                        <input type="number" class="form-control" id="editContractNumber" name="contractNumber" placeholder="Número de contrato" style="width: 100%;">
                     </div>
-                    <div class="form-group">
-                        <label for="editStreetAndNumber">Calle</label>
-                        <select class="form-control" id="editStreetAndNumber" name="streetAndNumber">
+                    <div class="edit-field-group" style="margin-bottom: 15px;">
+                        <label for="editMeterNumber" style="display: block; margin-bottom: 5px;">Número de Medidor</label>
+                        <input type="number" class="form-control" id="editMeterNumber" name="meterNumber" placeholder="Número de medidor" style="width: 100%;">
+                    </div>
+                    <div class="edit-field-group full" style="margin-bottom: 15px;">
+                        <label for="editStreetAndNumber" style="display: block; margin-bottom: 5px;">Calle</label>
+                        <select class="form-control" id="editStreetAndNumber" name="streetAndNumber" style="width: 100%;">
                             <option value="">Selecciona una calle</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label for="editStatus">Estado</label>
-                        <select class="form-control" id="editStatus" name="status">
+                    <div class="edit-field-group full" style="margin-bottom: 20px;">
+                        <label for="editStatus" style="display: block; margin-bottom: 5px;">Estado</label>
+                        <select class="form-control" id="editStatus" name="status" style="width: 100%;">
                             <option value="1">Activo</option>
                             <option value="0">Inactivo</option>
                         </select>
                     </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline" id="modalCancel">Cancelar</button>
-                <button class="btn btn-primary" id="saveEditButton">Guardar Cambios</button>
-            </div>
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="modal-actions">
+                    <button type="button" class="modal-btn btn-cancel" id="editCancelBtn">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="modal-btn btn-confirm" id="saveEditButton">
+                        <i class="fas fa-save"></i> Guardar
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
     <script src="../recursos/scripts/panel_admin.js"></script>
-    <script src="../recursos/scripts/validacion_beneficiarios.js?v=1.15"></script>
+    <script src="../recursos/scripts/validacion_beneficiarios.js?v=2.233433"></script>
 </body>
 </html>

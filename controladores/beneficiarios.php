@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
         exit;
     }
 
-    if ($action === 'get_streets') {
+    if ($action === 'get_calles') {
         $consulta = $conn->prepare("SELECT DISTINCT calle FROM domicilios ORDER BY calle");
         $consulta->execute();
         $resultado = $consulta->get_result();
@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
         while ($fila = $resultado->fetch_assoc()) {
             $calles[] = $fila['calle'];
         }
-        echo json_encode(['success' => true, 'streets' => $calles]);
+        echo json_encode(['success' => true, 'calles' => $calles]);
         $conn->close();
         exit;
     }
@@ -85,6 +85,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
+        // Obtener datos actuales para verificar cambio de nombre
+        $consulta_actual = $conn->prepare("SELECT nombre, nombre_anterior FROM usuarios_servicio WHERE id_usuario = ?");
+        $consulta_actual->bind_param("i", $id);
+        $consulta_actual->execute();
+        $resultado_actual = $consulta_actual->get_result();
+        $datos_actuales = $resultado_actual->fetch_assoc();
+        
+        $nombre_anterior_db = $datos_actuales['nombre_anterior'];
+        if ($nombre !== $datos_actuales['nombre']) {
+            $nombre_anterior_db = $datos_actuales['nombre'];
+        }
+
         // Obtener o crear id_domicilio
         $consulta = $conn->prepare("SELECT id_domicilio FROM domicilios WHERE calle = ?");
         $consulta->bind_param("s", $calle);
@@ -102,8 +114,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Actualizar
-        $consulta = $conn->prepare("UPDATE usuarios_servicio SET no_contrato = ?, no_medidor = ?, nombre = ?, id_domicilio = ?, activo = ? WHERE id_usuario = ?");
-        $consulta->bind_param("sssiii", $numero_contrato, $numero_medidor, $nombre, $id_domicilio, $activo, $id);
+        $consulta = $conn->prepare("UPDATE usuarios_servicio SET no_contrato = ?, no_medidor = ?, nombre = ?, nome_anterior = ?, id_domicilio = ?, activo = ? WHERE id_usuario = ?");
+        // Note: I need to make sure column name is correct. I used 'nombre_anterior'. 
+        // Wait, the previous turn script used 'nombre_anterior'.
+        // Let me check the column name I created.
+        // I ran `ALTER TABLE ... ADD COLUMN nombre_anterior ...`.
+        // So column is `nombre_anterior`.
+        $consulta = $conn->prepare("UPDATE usuarios_servicio SET no_contrato = ?, no_medidor = ?, nombre = ?, nombre_anterior = ?, id_domicilio = ?, activo = ? WHERE id_usuario = ?");
+        $consulta->bind_param("ssssiii", $numero_contrato, $numero_medidor, $nombre, $nombre_anterior_db, $id_domicilio, $activo, $id);
+        
         if ($consulta->execute()) {
             echo json_encode(['success' => true]);
         } else {

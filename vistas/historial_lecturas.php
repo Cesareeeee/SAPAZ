@@ -6,8 +6,8 @@
     <title>SAPAZ - Historial de Lecturas</title>
     <link rel="icon" href="../recursos/imagenes/SAPAZ.jpeg" type="image/jpeg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../recursos/estilos/panel_admin.css?v=1.0332434">
-    <link rel="stylesheet" href="../recursos/estilos/historial_lecturas.css?v=1.0339003">
+    <link rel="stylesheet" href="../recursos/estilos/panel_admin.css?v=1.0331442434">
+    <link rel="stylesheet" href="../recursos/estilos/historial_lecturas.css?v=1.0134439007">
 </head>
 <body>
     <!-- Header and Sidebar -->
@@ -57,65 +57,79 @@
                             <small>(Consumo negativo)</small>
                         </button>
                     </div>
-                </div>
 
-                <!-- Filtros de Fecha -->
-                <div class="filtros-fecha">
-                    <div class="fecha-group">
-                        <label for="filtroDia">
-                            <i class="fas fa-calendar-day"></i> Día
-                        </label>
-                        <select id="filtroDia">
-                            <option value="">Todos los días</option>
-                        </select>
-                    </div>
-                    <div class="fecha-group">
-                        <label for="filtroMes">
-                            <i class="fas fa-calendar-alt"></i> Mes
-                        </label>
-                        <select id="filtroMes">
-                            <option value="">Todos los meses</option>
-                            <option value="1">Enero</option>
-                            <option value="2">Febrero</option>
-                            <option value="3">Marzo</option>
-                            <option value="4">Abril</option>
-                            <option value="5">Mayo</option>
-                            <option value="6">Junio</option>
-                            <option value="7">Julio</option>
-                            <option value="8">Agosto</option>
-                            <option value="9">Septiembre</option>
-                            <option value="10">Octubre</option>
-                            <option value="11">Noviembre</option>
-                            <option value="12">Diciembre</option>
-                        </select>
-                    </div>
-                    <div class="fecha-group">
-                        <label for="filtroAnio">
-                            <i class="fas fa-calendar"></i> Año
-                        </label>
-                        <select id="filtroAnio">
-                            <option value="">Todos los años</option>
+                    <!-- Filtro de Orden -->
+                    <div class="filtro-orden">
+                        <select id="filtroOrden">
+                            <option value="desc" selected>Recientes primero</option>
+                            <option value="asc">Antiguas primero</option>
                         </select>
                     </div>
                 </div>
 
-                <!-- Filtros de Ubicación -->
-                <div class="filtros-ubicacion">
-                    <div class="fecha-group">
-                        <label for="filtroCalle">
-                            <i class="fas fa-road"></i> Calle
-                        </label>
-                        <select id="filtroCalle">
-                            <option value="">Todas las calles</option>
-                        </select>
+                <div class="filtros-advanced">
+                    <!-- Filtros de Fecha -->
+                    <div class="filtros-fecha">
+                        <button class="filtro-toggle-btn" id="toggleFecha">
+                            <i class="fas fa-calendar-alt"></i> Fecha
+                            <i class="fas fa-chevron-down toggle-icon"></i>
+                        </button>
+                        <div class="filtro-content" id="fechaContent" style="display: none;">
+                            <div class="fecha-group">
+                                <label for="filtroMes">
+                                    <i class="fas fa-calendar-alt"></i> Mes
+                                </label>
+                                <select id="filtroMes">
+                                    <option value="">Todos los meses</option>
+                                    <option value="1">Enero</option>
+                                    <option value="2">Febrero</option>
+                                    <option value="3">Marzo</option>
+                                    <option value="4">Abril</option>
+                                    <option value="5">Mayo</option>
+                                    <option value="6">Junio</option>
+                                    <option value="7">Julio</option>
+                                    <option value="8">Agosto</option>
+                                    <option value="9">Septiembre</option>
+                                    <option value="10">Octubre</option>
+                                    <option value="11">Noviembre</option>
+                                    <option value="12">Diciembre</option>
+                                </select>
+                            </div>
+                            <div class="fecha-group">
+                                <label for="filtroAnio">
+                                    <i class="fas fa-calendar"></i> Año
+                                </label>
+                                <select id="filtroAnio">
+                                    <option value="">Todos los años</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
-                    <div class="fecha-group">
-                        <label for="filtroBarrio">
-                            <i class="fas fa-map-marker-alt"></i> Barrio
-                        </label>
-                        <select id="filtroBarrio">
-                            <option value="">Todos los barrios</option>
-                        </select>
+
+                    <!-- Filtros de Ubicación -->
+                    <div class="filtros-ubicacion">
+                        <button class="filtro-toggle-btn" id="toggleUbicacion">
+                            <i class="fas fa-map-marker-alt"></i> Ubicación
+                            <i class="fas fa-chevron-down toggle-icon"></i>
+                        </button>
+                        <div class="filtro-content" id="ubicacionContent" style="display: none;">
+                            <div class="fecha-group">
+                                <label for="filtroCalle">
+                                    <i class="fas fa-road"></i> Calle
+                                </label>
+                                <select id="filtroCalle">
+                                    <option value="">Todas las calles</option>
+                                </select>
+                            </div>
+                            <div class="fecha-group">
+                                <label for="filtroBarrio">
+                                    <i class="fas fa-map-marker-alt"></i> Barrio
+                                </label>
+                                <select id="filtroBarrio">
+                                    <option value="">Todos los barrios</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -273,16 +287,20 @@
                         <label>Lectura Actual (m³)</label>
                         <span class="view-display" id="viewLecturaActual"></span>
                     </div>
-                    <div class="view-field-group full">
-                        <label>Observaciones</label>
+                    <div class="view-field-group full" style="background-color: #e3f2fd; border: 1px solid #2196f3; padding: 10px; border-radius: 4px;">
+                        <label style="font-weight: bold; color: #1976d2;">Observaciones</label>
                         <span class="view-display" id="viewObservaciones"></span>
+                    </div>
+                    <div class="view-field-group full" style="color: #999; font-size: 0.9em;">
+                        <label>Agregado el</label>
+                        <span class="view-display" id="viewAgregado"></span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="../recursos/scripts/panel_admin.js"></script>
-    <script src="../recursos/scripts/historial_lecturas.js?v=1.090330"></script>
+    <script src="../recursos/scripts/panel_admin.js?v=12.0343944103"></script>
+    <script src="../recursos/scripts/historial_lecturas.js?v=2.0491044334"></script>
 </body>
 </html>

@@ -84,8 +84,66 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     // Combined search and filter functionality
-    const searchInput = document.querySelector('.search-box input');
+    const searchInput = document.getElementById('searchInput');
     const streetFilter = document.getElementById('streetFilter');
+
+    // Inicializar selectores de calle
+    function inicializarCalles() {
+        fetch('../controladores/beneficiarios.php?action=get_calles')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    data.calles.forEach(calle => {
+                        const option = document.createElement('option');
+                        option.value = calle.calle;
+                        option.textContent = calle.calle;
+                        streetFilter.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error cargando calles:', error));
+    }
+
+    // Llamar a inicializar
+    inicializarCalles();
+
+    // Event listeners para modal de edición
+    editCloseBtn.addEventListener('click', () => {
+        editModalBackdrop.classList.remove('show');
+    });
+
+    editCancelBtn.addEventListener('click', () => {
+        editModalBackdrop.classList.remove('show');
+    });
+
+    editModalBackdrop.addEventListener('click', (e) => {
+        if (e.target === editModalBackdrop) {
+            editModalBackdrop.classList.remove('show');
+        }
+    });
+
+    // Submit handler for edit form
+    document.getElementById('editForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        formData.append('action', 'update');
+
+        fetch('../controladores/beneficiarios.php', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    mostrarAlerta('Éxito', 'Beneficiario actualizado correctamente', 'success');
+                    editModalBackdrop.classList.remove('show');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    mostrarAlerta('Error', data.message || 'Error al actualizar', 'error');
+                }
+            })
+            .catch(error => mostrarAlerta('Error', 'Error de conexión', 'error'));
+    });
 
     function filterBeneficiaries() {
         const searchValue = searchInput ? searchInput.value.toLowerCase() : '';
@@ -94,12 +152,12 @@ document.addEventListener('DOMContentLoaded', function () {
         let visibleCount = 0;
 
         rows.forEach(row => {
-            const name = row.cells[1].textContent.toLowerCase();
-            const street = row.cells[2].textContent.trim();
-            const medidor = row.cells[4].textContent.toLowerCase();
+            const name = row.querySelector('.beneficiary-name').textContent.toLowerCase();
+            const street = row.querySelector('.card-item:nth-child(3) .card-value').textContent.trim().toLowerCase();
+            const medidor = row.querySelector('.beneficiary-medidor').textContent.toLowerCase();
 
             const matchesSearch = name.includes(searchValue) || medidor.includes(searchValue);
-            const matchesStreet = streetValue === '' || street.includes(streetValue);
+            const matchesStreet = streetValue === '' || street.includes(streetValue.toLowerCase());
 
             if (matchesSearch && matchesStreet) {
                 row.style.display = '';
@@ -116,7 +174,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (noResultsRow) noResultsRow.style.display = 'none';
         } else {
             noResults.style.display = 'none';
-            if (noResultsRow && rows.length === 0) noResultsRow.style.display = '';
+            if (noResultsRow && rows.length === 0) noResultsRow.style.display = 'block';
         }
     }
 
@@ -132,6 +190,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     // Edit and Delete handlers
+
     document.addEventListener('click', function (e) {
         if (e.target.classList.contains('edit-btn') || e.target.closest('.edit-btn')) {
             const id = e.target.closest('.edit-btn').getAttribute('data-id');
@@ -147,7 +206,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         document.getElementById('editStreetAndNumber').value = data.beneficiario.calle;
                         document.getElementById('editStatus').value = data.beneficiario.activo ? '1' : '0';
                         document.getElementById('previousName').textContent = data.beneficiario.nombre_anterior ? `El usuario anterior era: ${data.beneficiario.nombre_anterior}` : '';
-                        document.getElementById('modal').style.display = 'flex';
+                        editModalBackdrop.classList.add('show');
                     } else {
                         mostrarAlerta('Error', 'No se pudo cargar el beneficiario', 'error');
                     }
@@ -173,44 +232,44 @@ document.addEventListener('DOMContentLoaded', function () {
                             document.body.removeChild(alerta);
                         }
                     }, 300);
-    
+
                     // Mostrar alerta de carga
                     const alertaCarga = mostrarAlerta('Eliminando', 'Por favor espera mientras se elimina el beneficiario...', 'loading');
-    
+
                     // Send delete request
                     fetch('../controladores/beneficiarios.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                         body: 'action=delete&id=' + id
                     })
-                    .then(response => response.json())
-                    .then(data => {
-                        // Cerrar alerta de carga
-                        alertaCarga.classList.remove('show');
-                        setTimeout(() => {
-                            if (document.body.contains(alertaCarga)) {
-                                document.body.removeChild(alertaCarga);
+                        .then(response => response.json())
+                        .then(data => {
+                            // Cerrar alerta de carga
+                            alertaCarga.classList.remove('show');
+                            setTimeout(() => {
+                                if (document.body.contains(alertaCarga)) {
+                                    document.body.removeChild(alertaCarga);
+                                }
+                            }, 300);
+
+                            if (data.success) {
+                                mostrarAlerta('Eliminado', 'Beneficiario eliminado correctamente', 'success');
+                                localStorage.setItem('activeTab', 'list');
+                                setTimeout(() => location.reload(), 1500);
+                            } else {
+                                mostrarAlerta('Error', data.message || 'Error al eliminar', 'error');
                             }
-                        }, 300);
-    
-                        if (data.success) {
-                            mostrarAlerta('Eliminado', 'Beneficiario eliminado correctamente', 'success');
-                            localStorage.setItem('activeTab', 'list');
-                            setTimeout(() => location.reload(), 1500);
-                        } else {
-                            mostrarAlerta('Error', data.message || 'Error al eliminar', 'error');
-                        }
-                    })
-                    .catch(error => {
-                        // Cerrar alerta de carga
-                        alertaCarga.classList.remove('show');
-                        setTimeout(() => {
-                            if (document.body.contains(alertaCarga)) {
-                                document.body.removeChild(alertaCarga);
-                            }
-                        }, 300);
-                        mostrarAlerta('Error', 'Error al eliminar', 'error');
-                    });
+                        })
+                        .catch(error => {
+                            // Cerrar alerta de carga
+                            alertaCarga.classList.remove('show');
+                            setTimeout(() => {
+                                if (document.body.contains(alertaCarga)) {
+                                    document.body.removeChild(alertaCarga);
+                                }
+                            }, 300);
+                            mostrarAlerta('Error', 'Error al eliminar', 'error');
+                        });
                 });
                 alertContent.appendChild(confirmBtn);
                 const cancelBtn = document.createElement('button');
@@ -334,6 +393,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 mostrarAlerta('Sin Conexión', 'No hay conexión a internet. Verifica tu conexión e intenta nuevamente.', 'error');
                 return;
             }
+
+            // Establecer fecha de registro
+            const fechaAlta = document.getElementById('registrationDate');
+            fechaAlta.value = new Date().toISOString().split('T')[0];
 
             // Mostrar alerta de carga
             const alertaCarga = mostrarAlerta('Guardando', 'Por favor espera mientras se guarda el beneficiario...', 'loading');
