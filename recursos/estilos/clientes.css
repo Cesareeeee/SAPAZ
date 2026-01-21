@@ -49,6 +49,15 @@
     margin-bottom: 0.8rem;
 }
 
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
 .card-wrapper .beneficiary-card {
     flex: 1;
     margin-bottom: 0;
@@ -105,6 +114,14 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.card-label i {
+    font-size: 0.8rem;
+    opacity: 0.8;
 }
 
 .card-value {
@@ -206,6 +223,27 @@
         padding: 1rem 1.5rem;
     }
 
+    .table-header {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    /* Estilos para select options */
+    .form-control option {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        color: #374151;
+        padding: 0.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+    }
+
+    .form-control option:hover {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: #ffffff;
+    }
+
     .beneficiary-header .card-body {
         flex: 1;
         display: grid;
@@ -219,43 +257,209 @@
     }
 }
 
-/* Botones de acción */
-.btn-edit,
-.btn-delete {
-    padding: 0.6rem;
-    border: none;
-    border-radius: 10px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
+/* Botones de acción más pequeños */
+.edit-btn,
+.delete-btn {
+    width: 32px;
+    height: 28px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 42px;
-    height: 42px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.8rem;
 }
 
-.btn-edit {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+.edit-btn {
+    background: #3b82f6;
     color: white;
 }
 
-.btn-edit:hover {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-    transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+.edit-btn:hover {
+    background: #2563eb;
+    transform: scale(1.1);
 }
 
-.btn-delete {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+.delete-btn {
+    background: #ef4444;
     color: white;
 }
 
-.btn-delete:hover {
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-    transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
+.delete-btn:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+}
+
+/* Clear search button */
+.clear-search {
+    background: #ef4444;
+    color: white;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-left: 0.5rem;
+}
+
+.clear-search:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+}
+
+/* Botones de acción más pequeños */
+.card-actions-external .btn-view,
+.card-actions-external .btn-edit,
+.card-actions-external .btn-delete {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.8rem;
+}
+
+.card-actions-external .btn-view {
+    background: #10b981;
+    color: white;
+}
+
+.card-actions-external .btn-view:hover {
+    background: #059669;
+    transform: scale(1.1);
+}
+
+.card-actions-external .btn-edit {
+    background: #3b82f6;
+    color: white;
+}
+
+.card-actions-external .btn-edit:hover {
+    background: #2563eb;
+    transform: scale(1.1);
+}
+
+.card-actions-external .btn-delete {
+    background: #ef4444;
+    color: white;
+}
+
+.card-actions-external .btn-delete:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+}
+
+/* Modal de vista */
+.view-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.view-modal-backdrop.show {
+    display: flex;
+}
+
+.view-modal-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.view-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 12px 12px 0 0;
+}
+
+.view-modal-header h3 {
+    margin: 0;
+    color: #1e40af;
+    font-size: 1.2rem;
+}
+
+.view-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #64748b;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.view-close-btn:hover {
+    background: #e2e8f0;
+    color: #374151;
+}
+
+.view-modal-form {
+    padding: 1.5rem;
+}
+
+.view-info-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.view-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.view-info-item.full {
+    grid-column: 1 / -1;
+}
+
+.view-info-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.view-info-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e40af;
+    padding: 0.75rem;
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
 }
 
 /* No results */
@@ -272,33 +476,182 @@
 }
 
 /* Responsive */
+@media (max-width: 1024px) {
+    .cards-container {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+}
+
 @media (max-width: 768px) {
+
+    body,
+    html {
+        overflow-x: hidden;
+    }
+
+    .main-content {
+        padding: 1rem;
+        box-sizing: border-box;
+    }
+
     .beneficiary-header {
         display: none;
     }
 
+    .table-header {
+        text-align: center;
+        overflow: hidden;
+    }
+
     .table-header>div {
-        flex-direction: column;
-        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        max-width: 100%;
+        overflow: hidden;
+    }
+
+    .table-title {
+        text-align: center;
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
+    }
+
+    .search-box {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .search-box input {
+        padding: 0.55rem 0.55rem 0.55rem 1.5rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .form-group {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .form-group select {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .cards-container {
+        justify-items: center;
+        grid-template-columns: 1fr;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .card-body {
         grid-template-columns: 1fr;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .beneficiary-card {
         padding: 1rem;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .card-wrapper {
         flex-direction: column;
         gap: 0.5rem;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .card-actions-external {
         flex-direction: row;
-        justify-content: flex-end;
+        justify-content: center;
         gap: 0.75rem;
+    }
+
+    /* Form inputs full width */
+    .form-row {
+        flex-direction: column;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .form-group {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .form-control {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Buttons same size */
+    .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+        box-sizing: border-box;
+    }
+
+    .form-container {
+        padding: 1rem;
+        box-sizing: border-box;
+    }
+
+    /* Modal edición responsivo */
+    .custom-modal {
+        max-width: 95%;
+        padding: 1.5rem;
+    }
+
+    .edit-info-section,
+    .edit-editable-section {
+        grid-template-columns: 1fr;
+    }
+
+    .edit-modal-header h3 {
+        font-size: 1.1rem;
+    }
+
+    .edit-btn {
+        padding: 0.6rem 1.2rem;
+        font-size: 0.85rem;
+    }
+
+    /* Mejorar responsividad general */
+    .custom-modal {
+        max-width: 95%;
+        margin: 1rem;
+    }
+
+    .modal-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .modal-btn {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .edit-modal-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .edit-btn {
+        width: 100%;
+    }
+
+    .edit-modal-container {
+        width: 95%;
+        max-width: 95%;
     }
 }
 
@@ -390,6 +743,167 @@
     background: #e2e8f0;
 }
 
+/* Estilos de edición de historial_lecturas */
+.custom-modal {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.edit-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 12px 12px 0 0;
+}
+
+.edit-modal-header h3 {
+    margin: 0;
+    color: #1e40af;
+    font-size: 1.2rem;
+}
+
+.edit-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #64748b;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.edit-close-btn:hover {
+    background: #e2e8f0;
+    color: #374151;
+}
+
+.edit-modal-form {
+    padding: 1rem;
+}
+
+.edit-info-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.edit-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.edit-info-item.full {
+    grid-column: 1 / -1;
+}
+
+.edit-info-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.edit-info-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e40af;
+    padding: 0.75rem;
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+.edit-editable-section {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.9rem;
+    margin-bottom: 1.2rem;
+}
+
+.edit-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.edit-field-group.full {
+    grid-column: 1 / -1;
+}
+
+.edit-field-group label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.edit-field-group input,
+.edit-field-group select {
+    padding: 0.6rem 0.8rem;
+    border: 2px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    background: #ffffff;
+    font-family: inherit;
+}
+
+.edit-field-group input:focus,
+.edit-field-group select:focus {
+    border-color: #3b82f6;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 1rem;
+    border-top: 2px solid #e2e8f0;
+    width: 100%;
+}
+
+.modal-btn {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    gap: 8px;
+}
+
+/* removed empty ruleset */
+
+.edit-btn-save:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
 /* Form Styles from lecturas.css for consistent design */
 .form-control {
     background: rgba(255, 255, 255, 0.7);
@@ -407,4 +921,180 @@
     box-shadow: 0 0 0 3px rgba(79, 163, 209, 0.3);
     color: #000000;
     outline: none;
+}
+
+/* Edit Modal Styles */
+.edit-modal-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.edit-modal-backdrop.show {
+    display: flex;
+}
+
+.edit-modal-container {
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modalSlideIn 0.3s ease;
+}
+
+/* Search Box Styles */
+.search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    border: 2px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+    flex: 1;
+}
+
+.search-box:focus-within {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.search-box i.fa-search {
+    color: #64748b;
+    margin-right: 0.75rem;
+    font-size: 1.1rem;
+}
+
+.search-box input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 0.95rem;
+    color: #1f2937;
+    background: transparent;
+}
+
+.clear-search {
+    background: #ef4444;
+    color: white;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-left: 0.5rem;
+}
+
+.clear-search:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+}
+
+/* Override Edit Modal Actions */
+.edit-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    border-top: 2px solid #e2e8f0;
+}
+
+
+/* Enhanced Edit Modal Buttons */
+.edit-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    background: #f9fafb;
+    border-radius: 0 0 12px 12px;
+}
+
+.edit-btn {
+    padding: 0.6rem 1.25rem;
+    font-size: 0.85rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 120px;
+    justify-content: center;
+    border: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.edit-btn i {
+    font-size: 0.9rem;
+}
+
+.edit-btn-cancel {
+    background: #f1f5f9;
+    color: #475569;
+    border: 2px solid #e2e8f0;
+}
+
+.edit-btn-cancel:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.edit-btn-save {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: white;
+}
+
+.edit-btn-save:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.2);
+}
+
+/* Responsive Edit Modal */
+@media (max-width: 768px) {
+    .edit-modal-container {
+        width: 95%;
+        max-height: 95vh;
+        padding: 0;
+    }
+
+    .edit-editable-section {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .edit-field-group {
+        width: 100%;
+    }
+
+    .edit-modal-actions {
+        flex-direction: column-reverse;
+        gap: 0.5rem;
+    }
+
+    .edit-btn {
+        width: 100%;
+    }
 }

@@ -1,5 +1,7 @@
-// Función de Alerta Personalizada
+// Función de Alerta Personalizada (Toast Style)
 function mostrarAlerta(titulo, mensaje, tipo = 'success', autoCerrar = true) {
+    if (tipo === 'error') autoCerrar = false;
+
     // Crear elemento de alerta
     const alerta = document.createElement('div');
     alerta.className = 'custom-alert';
@@ -12,7 +14,7 @@ function mostrarAlerta(titulo, mensaje, tipo = 'success', autoCerrar = true) {
                 <h3>${titulo}</h3>
                 <p>${mensaje}</p>
             </div>
-            ${tipo !== 'loading' ? '<button class="custom-alert-close">&times;</button>' : ''}
+            <button class="custom-alert-close">&times;</button>
         </div>
     `;
     document.body.appendChild(alerta);
@@ -20,146 +22,180 @@ function mostrarAlerta(titulo, mensaje, tipo = 'success', autoCerrar = true) {
     // Mostrar con animación
     setTimeout(() => alerta.classList.add('show'), 10);
 
-    if (tipo !== 'loading') {
-        // Cerrar al hacer clic en el botón
-        alerta.querySelector('.custom-alert-close').addEventListener('click', () => {
-            alerta.classList.remove('show');
-            setTimeout(() => {
-                if (document.body.contains(alerta)) {
-                    document.body.removeChild(alerta);
-                }
-            }, 300);
-        });
+    // Cerrar al hacer clic en el botón
+    alerta.querySelector('.custom-alert-close').addEventListener('click', () => {
+        alerta.classList.remove('show');
+        setTimeout(() => { if (document.body.contains(alerta)) document.body.removeChild(alerta); }, 300);
+    });
 
-        // Cerrar automáticamente después de 5 segundos si autoCerrar
-        if (autoCerrar) {
-            setTimeout(() => {
-                if (document.body.contains(alerta)) {
-                    alerta.classList.remove('show');
-                    setTimeout(() => {
-                        if (document.body.contains(alerta)) {
-                            document.body.removeChild(alerta);
-                        }
-                    }, 300);
-                }
-            }, 5000);
-        }
+    // Cerrar automáticamente
+    if (autoCerrar) {
+        setTimeout(() => {
+            if (document.body.contains(alerta)) {
+                alerta.classList.remove('show');
+                setTimeout(() => { if (document.body.contains(alerta)) document.body.removeChild(alerta); }, 300);
+            }
+        }, 10000); // 10 seconds
     }
-
-    return alerta; // Retornar para poder cerrarlo manualmente
+    return alerta;
 }
 
 // Validación de Beneficiarios
 document.addEventListener('DOMContentLoaded', function () {
-    // Tab switching
+    // --- Variables Globales y Elementos ---
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
+    const searchInput = document.getElementById('searchInput');
+    const btnClearSearch = document.getElementById('btnClearSearch');
+    const streetFilter = document.getElementById('streetFilter');
+    const barrioFilter = document.getElementById('barrioFilter');
+    const beneficiariesContainer = document.getElementById('beneficiariesTableBody');
+    const loadingOverlay = document.createElement('div');
+    let currentPage = 1;
+    let totalPages = 1;
+    loadingOverlay.className = 'loading-overlay';
+    loadingOverlay.id = 'loadingOverlay';
+    loadingOverlay.innerHTML = '<div class="spinner"></div><p>Cargando...</p>';
+    if (!document.getElementById('loadingOverlay')) document.body.appendChild(loadingOverlay);
 
+    // Modals
+    const modalBackdrop = document.getElementById('customModalBackdrop');
+    const modalIcon = document.getElementById('modalIcon');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalMessage = document.getElementById('modalMessage');
+    const modalActions = document.getElementById('modalActions');
+
+    const editModalBackdrop = document.getElementById('editModalBackdrop');
+    const editForm = document.getElementById('editForm');
+    const editCloseBtn = document.getElementById('editCloseBtn');
+    const editCancelBtn = document.getElementById('editCancelBtn');
+
+    const viewModalBackdrop = document.getElementById('viewModalBackdrop');
+    const viewCloseBtn = document.getElementById('viewCloseBtn');
+
+    // --- Load Beneficiaries Function ---
+    function loadBeneficiaries(page = 1) {
+        mostrarLoading(true);
+        fetch(`../controladores/beneficiarios.php?action=get_beneficiarios&page=${page}`)
+            .then(r => r.json())
+            .then(data => {
+                mostrarLoading(false);
+                if (data.success) {
+                    const container = document.getElementById('beneficiariesTableBody');
+                    container.innerHTML = '';
+                    data.beneficiarios.forEach(row => {
+                        const estado = row.activo ? 'Activo' : 'Inactivo';
+                        const statusClass = row.activo ? 'paid' : 'pending';
+                        const html = `<div data-id='${row.id_usuario}' data-barrio='${row.barrio}' class='card-wrapper beneficiary-row'>
+                        <div class='beneficiary-card'>
+                            <div class='card-body'>
+                                <div class='card-item'>
+                                    <div class='card-label'># Beneficiario</div>
+                                    <div class='card-value'>${row.id_usuario}</div>
+                                </div>
+                                <div class='card-item'>
+                                    <div class='card-label'><i class='fas fa-user'></i> Nombre</div>
+                                    <div class='card-value beneficiary-name' style='color: #000000;'>${row.nombre}</div>
+                                </div>
+                                <div class='card-item'>
+                                    <div class='card-label'><i class='fas fa-map-marker-alt'></i> Calle, Barrio</div>
+                                    <div class='card-value'>${row.calle}, ${row.barrio}</div>
+                                </div>
+                                <div class='card-item'>
+                                    <div class='card-label'>Contrato</div>
+                                    <div class='card-value'>${row.no_contrato}</div>
+                                </div>
+                                <div class='card-item'>
+                                    <div class='card-label'><i class='fas fa-tachometer-alt'></i> Medidor</div>
+                                    <div class='card-value beneficiary-medidor' style='color: #000000;'>${row.no_medidor}</div>
+                                </div>
+                                <div class='card-item'>
+                                    <div class='card-label'>Fecha Alta</div>
+                                    <div class='card-value'>${row.fecha_alta}</div>
+                                </div>
+                                <div class='card-item'>
+                                    <div class='card-label'>Estado</div>
+                                    <div class='card-value'><span class='status ${statusClass}'>${estado}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class='card-actions-external'>
+                            <button class='btn-view' data-id='${row.id_usuario}' title='Ver detalles'><i class='fas fa-eye'></i></button>
+                            <button class='btn-edit' data-id='${row.id_usuario}' title='Editar'><i class='fas fa-edit'></i></button>
+                            <button class='btn-delete' data-id='${row.id_usuario}' title='Eliminar'><i class='fas fa-trash'></i></button>
+                        </div>
+                    </div>`;
+                        container.insertAdjacentHTML('beforeend', html);
+                    });
+                    currentPage = data.page;
+                    totalPages = Math.ceil(data.total / data.limit);
+                    document.getElementById('pageInfo').textContent = totalPages > 0 ? `Página ${currentPage} de ${totalPages}` : 'No hay beneficiarios';
+                    document.getElementById('prevPage').disabled = currentPage <= 1;
+                    document.getElementById('nextPage').disabled = currentPage >= totalPages;
+                    document.querySelector('.pagination').style.display = totalPages > 0 ? 'flex' : 'none';
+                    const noResultsRow = document.getElementById('noResultsRow');
+                    if (data.beneficiarios.length === 0) {
+                        noResultsRow.textContent = 'No hay beneficiarios registrados';
+                        noResultsRow.style.display = 'block';
+                    } else {
+                        noResultsRow.style.display = 'none';
+                    }
+                } else {
+                    showModal('Error', 'No se pudieron cargar los beneficiarios', 'error');
+                }
+            })
+            .catch(err => {
+                mostrarLoading(false);
+                console.error('Error loading beneficiaries:', err);
+                // showModal('Error', 'Error de conexión', 'error'); // Suppressed per user request
+            });
+    }
+
+    // --- Tab Switching ---
     tabButtons.forEach(button => {
         button.addEventListener('click', () => {
-            // Remove active class from all buttons
             tabButtons.forEach(btn => btn.classList.remove('active'));
-            // Add active to clicked
             button.classList.add('active');
-
-            // Hide all contents
             tabContents.forEach(content => content.style.display = 'none');
-            // Show selected
             const tab = button.getAttribute('data-tab');
             document.getElementById(tab + 'Section').style.display = 'block';
+            localStorage.setItem('activeTab', tab);
+            if (tab === 'list') {
+                loadBeneficiaries(currentPage);
+            }
         });
     });
 
-    // Restore active tab from localStorage or show default
     const savedTab = localStorage.getItem('activeTab') || 'list';
-    const savedTabButton = document.querySelector(`[data-tab="${savedTab}"]`);
-    if (savedTabButton) {
-        tabButtons.forEach(btn => btn.classList.remove('active'));
-        savedTabButton.classList.add('active');
-        tabContents.forEach(content => content.style.display = 'none');
-        document.getElementById(savedTab + 'Section').style.display = 'block';
+    if (document.querySelector(`[data-tab="${savedTab}"]`)) {
+        document.querySelector(`[data-tab="${savedTab}"]`).click();
     } else {
-        document.getElementById('addSection').style.display = 'block';
+        document.querySelector('[data-tab="list"]').click();
     }
+    // Redundant loadBeneficiaries call removed
 
-
-    // Combined search and filter functionality
-    const searchInput = document.getElementById('searchInput');
-    const streetFilter = document.getElementById('streetFilter');
-
-    // Inicializar selectores de calle
-    function inicializarCalles() {
-        fetch('../controladores/beneficiarios.php?action=get_calles')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    data.calles.forEach(calle => {
-                        const option = document.createElement('option');
-                        option.value = calle.calle;
-                        option.textContent = calle.calle;
-                        streetFilter.appendChild(option);
-                    });
-                }
-            })
-            .catch(error => console.error('Error cargando calles:', error));
-    }
-
-    // Llamar a inicializar
-    inicializarCalles();
-
-    // Event listeners para modal de edición
-    editCloseBtn.addEventListener('click', () => {
-        editModalBackdrop.classList.remove('show');
-    });
-
-    editCancelBtn.addEventListener('click', () => {
-        editModalBackdrop.classList.remove('show');
-    });
-
-    editModalBackdrop.addEventListener('click', (e) => {
-        if (e.target === editModalBackdrop) {
-            editModalBackdrop.classList.remove('show');
-        }
-    });
-
-    // Submit handler for edit form
-    document.getElementById('editForm').addEventListener('submit', function (e) {
-        e.preventDefault();
-        const formData = new FormData(this);
-        formData.append('action', 'update');
-
-        fetch('../controladores/beneficiarios.php', {
-            method: 'POST',
-            body: formData
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    mostrarAlerta('Éxito', 'Beneficiario actualizado correctamente', 'success');
-                    editModalBackdrop.classList.remove('show');
-                    setTimeout(() => location.reload(), 1500);
-                } else {
-                    mostrarAlerta('Error', data.message || 'Error al actualizar', 'error');
-                }
-            })
-            .catch(error => mostrarAlerta('Error', 'Error de conexión', 'error'));
-    });
-
+    // --- Search & Filter Logic ---
     function filterBeneficiaries() {
-        const searchValue = searchInput ? searchInput.value.toLowerCase() : '';
+        const searchValue = searchInput ? searchInput.value.toLowerCase().trim() : '';
         const streetValue = streetFilter ? streetFilter.value : '';
+        const barrioValue = barrioFilter ? barrioFilter.value : '';
         const rows = document.querySelectorAll('.beneficiary-row');
         let visibleCount = 0;
 
+        if (btnClearSearch) btnClearSearch.style.display = searchValue.length > 0 ? 'flex' : 'none';
+
         rows.forEach(row => {
             const name = row.querySelector('.beneficiary-name').textContent.toLowerCase();
-            const street = row.querySelector('.card-item:nth-child(3) .card-value').textContent.trim().toLowerCase();
+            const streetAndBarrio = row.querySelector('.card-item:nth-child(3) .card-value').textContent.trim();
+            const street = streetAndBarrio.split(',')[0].trim().toLowerCase();
+            const barrio = row.getAttribute('data-barrio') || '';
             const medidor = row.querySelector('.beneficiary-medidor').textContent.toLowerCase();
-
             const matchesSearch = name.includes(searchValue) || medidor.includes(searchValue);
             const matchesStreet = streetValue === '' || street.includes(streetValue.toLowerCase());
+            const matchesBarrio = barrioValue === '' || barrio.toLowerCase().includes(barrioValue.toLowerCase());
+            const matchesFilter = barrioValue !== '' ? (matchesSearch && matchesBarrio) : (matchesSearch && matchesStreet);
 
-            if (matchesSearch && matchesStreet) {
+            if (matchesFilter) {
                 row.style.display = '';
                 visibleCount++;
             } else {
@@ -170,455 +206,417 @@ document.addEventListener('DOMContentLoaded', function () {
         const noResults = document.getElementById('noSearchResults');
         const noResultsRow = document.getElementById('noResultsRow');
         if (visibleCount === 0 && rows.length > 0) {
-            noResults.style.display = 'block';
+            if (noResults) noResults.style.display = 'block';
             if (noResultsRow) noResultsRow.style.display = 'none';
         } else {
-            noResults.style.display = 'none';
+            if (noResults) noResults.style.display = 'none';
             if (noResultsRow && rows.length === 0) noResultsRow.style.display = 'block';
         }
+
+        const titleElement = document.querySelector('.table-title');
+        if (titleElement) {
+            if (barrioValue !== '') titleElement.textContent = `Lista de Beneficiarios: ${barrioValue}`;
+            else if (streetValue !== '') titleElement.textContent = `Lista de Beneficiarios: ${streetValue}`;
+            else titleElement.textContent = 'Lista de Beneficiarios';
+        }
     }
 
-    // Search functionality
-    if (searchInput) {
-        searchInput.addEventListener('input', filterBeneficiaries);
+    if (searchInput) searchInput.addEventListener('input', filterBeneficiaries);
+    if (streetFilter) streetFilter.addEventListener('change', () => { barrioFilter.value = ''; filterBeneficiaries(); });
+    if (barrioFilter) barrioFilter.addEventListener('change', () => { streetFilter.value = ''; filterBeneficiaries(); });
+    if (btnClearSearch) btnClearSearch.addEventListener('click', () => { searchInput.value = ''; filterBeneficiaries(); });
+
+    // Pagination
+    document.getElementById('prevPage').addEventListener('click', () => { if (currentPage > 1) loadBeneficiaries(currentPage - 1); });
+    document.getElementById('nextPage').addEventListener('click', () => { if (currentPage < totalPages) loadBeneficiaries(currentPage + 1); });
+
+    // --- Modal Functions ---
+    // Wrapper to unify style: Use Toast for info/success/error, Modal for Warning/Confirm
+    function showModal(title, message, type = 'info', onConfirm = null, onCancel = null) {
+        if (type === 'success' || type === 'error' || type === 'info') {
+            mostrarAlerta(title, message, type, true);
+            return;
+        }
+
+        // Warning/Confirm Modal (Center)
+        let iconHtml = '<i class="fas fa-exclamation-triangle"></i>';
+        modalIcon.className = 'modal-icon warning';
+        modalIcon.innerHTML = iconHtml;
+        modalTitle.textContent = title;
+        modalMessage.innerHTML = message;
+        modalActions.innerHTML = '';
+
+        if (type === 'warning') {
+            const confirmBtn = document.createElement('button');
+            confirmBtn.className = 'modal-btn btn-confirm';
+            confirmBtn.innerHTML = '<i class="fas fa-check"></i> Continuar';
+            confirmBtn.onclick = () => { closeModal(); if (onConfirm) onConfirm(); };
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'modal-btn btn-cancel';
+            cancelBtn.innerHTML = '<i class="fas fa-times"></i> Cancelar';
+            cancelBtn.onclick = () => { closeModal(); if (onCancel) onCancel(); };
+
+            modalActions.appendChild(cancelBtn);
+            modalActions.appendChild(confirmBtn);
+        } else {
+            // Fallback
+            const okBtn = document.createElement('button');
+            okBtn.className = 'modal-btn btn-confirm';
+            okBtn.textContent = 'Aceptar';
+            okBtn.onclick = closeModal;
+            modalActions.appendChild(okBtn);
+        }
+
+        modalBackdrop.classList.add('show');
+        modalBackdrop.style.display = 'flex';
     }
 
-    // Street filter functionality
-    if (streetFilter) {
-        streetFilter.addEventListener('change', filterBeneficiaries);
+    function closeModal() {
+        modalBackdrop.classList.remove('show');
+        setTimeout(() => modalBackdrop.style.display = 'none', 300);
     }
 
+    function closeEditModal() {
+        editModalBackdrop.classList.remove('show');
+        setTimeout(() => editModalBackdrop.style.display = 'none', 300);
+    }
+    function closeViewModal() { viewModalBackdrop.style.display = 'none'; }
 
-    // Edit and Delete handlers
+    if (editCloseBtn) editCloseBtn.addEventListener('click', closeEditModal);
+    if (editCancelBtn) editCancelBtn.addEventListener('click', closeEditModal);
+    if (viewCloseBtn) viewCloseBtn.addEventListener('click', closeViewModal);
+    window.addEventListener('click', (e) => { if (e.target === viewModalBackdrop) closeViewModal(); });
 
-    document.addEventListener('click', function (e) {
-        if (e.target.classList.contains('edit-btn') || e.target.closest('.edit-btn')) {
-            const id = e.target.closest('.edit-btn').getAttribute('data-id');
-            // Load data and open modal
-            fetch('../controladores/beneficiarios.php?action=get&id=' + id)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        document.getElementById('editId').value = data.beneficiario.id_usuario;
-                        document.getElementById('editBeneficiaryName').value = data.beneficiario.nombre;
-                        document.getElementById('editContractNumber').value = data.beneficiario.no_contrato;
-                        document.getElementById('editMeterNumber').value = data.beneficiario.no_medidor;
-                        document.getElementById('editStreetAndNumber').value = data.beneficiario.calle;
-                        document.getElementById('editStatus').value = data.beneficiario.activo ? '1' : '0';
-                        document.getElementById('previousName').textContent = data.beneficiario.nombre_anterior ? `El usuario anterior era: ${data.beneficiario.nombre_anterior}` : '';
-                        editModalBackdrop.classList.add('show');
-                    } else {
-                        mostrarAlerta('Error', 'No se pudo cargar el beneficiario', 'error');
+    function mostrarLoading(mostrar) {
+        loadingOverlay.style.display = mostrar ? 'flex' : 'none';
+    }
+
+    // --- Action Buttons ---
+    beneficiariesContainer.addEventListener('click', function (e) {
+        const btnEdit = e.target.closest('.btn-edit');
+        const btnDelete = e.target.closest('.btn-delete');
+        const btnView = e.target.closest('.btn-view');
+
+        if (btnEdit) mostrarModalEdicion(btnEdit.dataset.id);
+        else if (btnDelete) confirmarEliminacion(btnDelete.dataset.id);
+        else if (btnView) mostrarModalVista(btnView.dataset.id);
+    });
+
+    // --- View Modal Logic ---
+    function mostrarModalVista(id) {
+        mostrarLoading(true);
+        fetch(`../controladores/beneficiarios.php?action=get_usuario&id=${id}`)
+            .then(r => r.json())
+            .then(data => {
+                mostrarLoading(false);
+                if (data.success) {
+                    const u = data.usuario;
+                    document.getElementById('viewNombre').textContent = u.nombre;
+                    document.getElementById('viewContrato').textContent = u.no_contrato;
+                    document.getElementById('viewMedidor').textContent = u.no_medidor;
+                    document.getElementById('viewEstado').textContent = u.activo == 1 ? 'Activo' : 'Inactivo';
+                    document.getElementById('viewEstado').className = `view-info-value ${u.activo == 1 ? 'status paid' : 'status pending'}`;
+                    document.getElementById('viewDireccion').textContent = `${u.calle}, ${u.barrio}`;
+                    document.getElementById('viewId').textContent = u.id_usuario;
+                    document.getElementById('viewFecha').textContent = u.fecha_alta;
+
+                    // Previous Name View
+                    const viewPrevContainer = document.getElementById('viewPreviousNameContainer');
+                    const viewPrevDisplay = document.getElementById('viewPreviousName');
+                    if (viewPrevContainer && viewPrevDisplay) {
+                        if (u.nombre_anterior && u.nombre_anterior !== u.nombre) {
+                            viewPrevDisplay.textContent = u.nombre_anterior;
+                            viewPrevContainer.style.display = 'block';
+                        } else {
+                            viewPrevContainer.style.display = 'none';
+                        }
                     }
-                })
-                .catch(error => mostrarAlerta('Error', 'Error al cargar', 'error'));
+
+                    viewModalBackdrop.style.display = 'flex';
+                } else showModal('Error', 'No se pudo cargar la información', 'error');
+            })
+            .catch(() => { mostrarLoading(false); showModal('Error', 'Error de conexión', 'error'); });
+    }
+
+    // --- Edit Logic & Debt Check ---
+    let originalName = '';
+    let originalStreet = '';
+
+    function showDebtCheckModal(title, message, onNoDebts, onHasDebts) {
+        // Reuse Warning Modal structure but custom buttons
+        modalIcon.className = 'modal-icon warning';
+        modalIcon.innerHTML = '<i class="fas fa-question-circle"></i>';
+        modalTitle.textContent = title;
+        modalMessage.innerHTML = message;
+        modalActions.innerHTML = '';
+
+        const btnYes = document.createElement('button');
+        btnYes.className = 'modal-btn btn-error-modal'; // Red style from CSS
+        btnYes.innerHTML = '<i class="fas fa-times-circle"></i> Sí, tiene adeudos';
+        btnYes.onclick = () => { closeModal(); if (onHasDebts) onHasDebts(); };
+
+        const btnNo = document.createElement('button');
+        btnNo.className = 'modal-btn btn-success-modal'; // Green style
+        btnNo.innerHTML = '<i class="fas fa-check-circle"></i> No, continuar';
+        btnNo.onclick = () => { closeModal(); if (onNoDebts) onNoDebts(); };
+
+        modalActions.appendChild(btnYes);
+        modalActions.appendChild(btnNo);
+        modalBackdrop.classList.add('show');
+        modalBackdrop.style.display = 'flex';
+    }
+
+    function proceedUpdate(id) {
+        console.log('Iniciando proceedUpdate para ID:', id);
+        mostrarLoading(true);
+        const formData = new FormData(editForm);
+        formData.append('action', 'update');
+        formData.append('id', id);
+
+        // Debug FormData
+        for (let [key, value] of formData.entries()) {
+            console.log(key, value);
         }
-        if (e.target.classList.contains('delete-btn') || e.target.closest('.delete-btn')) {
-            const id = e.target.closest('.delete-btn').getAttribute('data-id');
-            mostrarAlerta('Confirmar Eliminación', '¿Estás seguro de eliminar este beneficiario?', 'warning', false);
-            // Add confirm button to alert
-            const alertContent = document.querySelector('.custom-alert-content.warning');
-            if (alertContent) {
-                const confirmBtn = document.createElement('button');
-                confirmBtn.className = 'btn btn-primary';
-                confirmBtn.textContent = 'Eliminar';
-                confirmBtn.style.marginTop = '1rem';
-                confirmBtn.addEventListener('click', function () {
-                    // Close alert
-                    const alerta = document.querySelector('.custom-alert');
-                    alerta.classList.remove('show');
-                    setTimeout(() => {
-                        if (document.body.contains(alerta)) {
-                            document.body.removeChild(alerta);
-                        }
-                    }, 300);
 
-                    // Mostrar alerta de carga
-                    const alertaCarga = mostrarAlerta('Eliminando', 'Por favor espera mientras se elimina el beneficiario...', 'loading');
-
-                    // Send delete request
-                    fetch('../controladores/beneficiarios.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: 'action=delete&id=' + id
-                    })
-                        .then(response => response.json())
-                        .then(data => {
-                            // Cerrar alerta de carga
-                            alertaCarga.classList.remove('show');
-                            setTimeout(() => {
-                                if (document.body.contains(alertaCarga)) {
-                                    document.body.removeChild(alertaCarga);
-                                }
-                            }, 300);
-
-                            if (data.success) {
-                                mostrarAlerta('Eliminado', 'Beneficiario eliminado correctamente', 'success');
-                                localStorage.setItem('activeTab', 'list');
-                                setTimeout(() => location.reload(), 1500);
-                            } else {
-                                mostrarAlerta('Error', data.message || 'Error al eliminar', 'error');
-                            }
-                        })
-                        .catch(error => {
-                            // Cerrar alerta de carga
-                            alertaCarga.classList.remove('show');
-                            setTimeout(() => {
-                                if (document.body.contains(alertaCarga)) {
-                                    document.body.removeChild(alertaCarga);
-                                }
-                            }, 300);
-                            mostrarAlerta('Error', 'Error al eliminar', 'error');
-                        });
+        fetch('../controladores/beneficiarios.php', { method: 'POST', body: formData })
+            .then(r => {
+                console.log('Respuesta cruda recibida:', r);
+                return r.text().then(text => {
+                    console.log('Texto de respuesta:', text);
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('Error al parsear JSON:', e);
+                        throw new Error('Respuesta del servidor inválida: ' + text.substring(0, 50));
+                    }
                 });
-                alertContent.appendChild(confirmBtn);
-                const cancelBtn = document.createElement('button');
-                cancelBtn.className = 'btn btn-outline';
-                cancelBtn.textContent = 'Cancelar';
-                cancelBtn.style.marginTop = '1rem';
-                cancelBtn.style.marginLeft = '0.5rem';
-                cancelBtn.addEventListener('click', function () {
-                    const alerta = document.querySelector('.custom-alert');
-                    alerta.classList.remove('show');
-                    setTimeout(() => {
-                        if (document.body.contains(alerta)) {
-                            document.body.removeChild(alerta);
-                        }
-                    }, 300);
-                });
-                alertContent.appendChild(cancelBtn);
+            })
+            .then(data => {
+                console.log('Datos procesados:', data);
+                mostrarLoading(false);
+                if (data.success) {
+                    showModal('Éxito', 'Beneficiario actualizado correctamente', 'success');
+                    closeEditModal();
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    console.error('Error desde servidor:', data.message);
+                    showModal('Error', data.message || 'Error al actualizar', 'error');
+                }
+            })
+            .catch(err => {
+                console.error('Error Catch:', err);
+                mostrarLoading(false);
+                showModal('Error', 'Error: ' + err.message, 'error');
+            });
+    }
+
+    function mostrarModalEdicion(id) {
+        mostrarLoading(true);
+        console.log('Abriendo modal edición para ID:', id);
+        // Streets and User data
+        Promise.all([
+            fetch('../controladores/beneficiarios.php?action=get_calles').then(r => r.json()),
+            fetch(`../controladores/beneficiarios.php?action=get_usuario&id=${id}`).then(r => r.json())
+        ]).then(([streetsData, userData]) => {
+            mostrarLoading(false);
+            if (streetsData.success) {
+                const sel = document.getElementById('editStreetAndNumber');
+                sel.innerHTML = '<option value="">Selecciona una calle</option>';
+                streetsData.calles.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; sel.appendChild(opt); });
             }
-        }
-    });
-    const formularioBeneficiario = document.getElementById('beneficiaryForm');
-    const numeroContrato = document.getElementById('contractNumber');
-    const numeroMedidor = document.getElementById('meterNumber');
-    const nombreBeneficiario = document.getElementById('beneficiaryName');
-    const calleNumero = document.getElementById('streetAndNumber');
-    const fechaAlta = document.getElementById('registrationDate');
-    const botonGuardar = document.getElementById('saveButton');
-    const botonCancelar = document.getElementById('cancelButton');
+            if (userData.success) {
+                const u = userData.usuario;
+                originalName = u.nombre;
+                originalStreet = u.calle;
+                console.log('Datos cargados:', u);
 
-    // Función para mostrar error
-    function mostrarError(campo, mensaje) {
-        campo.style.borderColor = 'red';
-        campo.style.boxShadow = '0 0 0 3px rgba(244, 67, 54, 0.1)';
-        // Mostrar mensaje de error, por ejemplo, en un span
-        let errorSpan = campo.parentElement.querySelector('.error-message');
-        if (!errorSpan) {
-            errorSpan = document.createElement('span');
-            errorSpan.className = 'error-message';
-            errorSpan.style.color = 'red';
-            errorSpan.style.fontSize = '0.8rem';
-            campo.parentElement.appendChild(errorSpan);
-        }
-        errorSpan.textContent = mensaje;
+                document.getElementById('editIdDisplay').textContent = u.id_usuario;
+                document.getElementById('editFechaDisplay').textContent = u.fecha_alta;
+                document.getElementById('editBeneficiaryName').value = u.nombre;
+                document.getElementById('editContractNumber').value = u.no_contrato;
+                document.getElementById('editMeterNumber').value = u.no_medidor;
+                document.getElementById('editStreetAndNumber').value = u.calle;
+                document.getElementById('editStatus').value = u.activo;
+
+                const prevNameContainer = document.getElementById('previousNameContainer');
+                const prevNameDisplay = document.getElementById('previousNameDisplay');
+                if (u.nombre_anterior && u.nombre_anterior !== u.nombre) {
+                    prevNameDisplay.textContent = u.nombre_anterior;
+                    prevNameContainer.style.display = 'block';
+                } else {
+                    prevNameContainer.style.display = 'none';
+                }
+
+                editForm.dataset.id = id;
+                editModalBackdrop.classList.add('show');
+                editModalBackdrop.style.display = 'flex';
+            } else {
+                showModal('Error', 'No se pudieron cargar los datos', 'error');
+            }
+        }).catch(() => { mostrarLoading(false); showModal('Error', 'Error de conexión', 'error'); });
     }
 
-    // Función para quitar error
-    function quitarError(campo) {
-        campo.style.borderColor = '#ddd';
-        campo.style.boxShadow = 'none';
-        const errorSpan = campo.parentElement.querySelector('.error-message');
-        if (errorSpan) {
-            errorSpan.textContent = '';
-        }
-    }
+    // Edit form validation elements
+    const editName = document.getElementById('editBeneficiaryName');
+    const editContract = document.getElementById('editContractNumber');
+    const editMeter = document.getElementById('editMeterNumber');
+    const editStreet = document.getElementById('editStreetAndNumber');
 
-    // Validar número de contrato
-    numeroContrato.addEventListener('input', function () {
-        if (this.value.trim() === '' || isNaN(this.value)) {
-            mostrarError(this, 'Debe ingresar un número válido');
-        } else {
-            quitarError(this);
-        }
-    });
+    // Real-time validation for edit form
+    if (editName) editName.addEventListener('input', function () { if (this.value.trim().length < 3) mostrarError(this, 'Mínimo 3 caracteres'); else quitarError(this); });
+    if (editContract) editContract.addEventListener('input', function () { if (this.value.trim() === '' || isNaN(this.value)) mostrarError(this, 'Inválido'); else quitarError(this); });
+    if (editMeter) editMeter.addEventListener('input', function () { if (this.value.trim() === '' || isNaN(this.value)) mostrarError(this, 'Inválido'); else quitarError(this); });
+    if (editStreet) editStreet.addEventListener('change', function () { if (this.value.trim() === '') mostrarError(this, 'Requerido'); else quitarError(this); });
 
-    // Validar número de medidor
-    numeroMedidor.addEventListener('input', function () {
-        if (this.value.trim() === '' || isNaN(this.value)) {
-            mostrarError(this, 'Debe ingresar un número válido');
-        } else {
-            quitarError(this);
-        }
-    });
+    if (editForm) {
+        editForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            console.log('Evento submit disparado');
+            const id = editForm.dataset.id;
+            console.log('ID del dataset:', id);
 
-    // Validar nombre
-    nombreBeneficiario.addEventListener('input', function () {
-        if (this.value.trim() === '' || this.value.length < 3) {
-            mostrarError(this, 'El nombre debe tener al menos 3 caracteres');
-        } else {
-            quitarError(this);
-        }
-    });
-
-    // Validar calle y número
-    calleNumero.addEventListener('input', function () {
-        if (this.value.trim() === '') {
-            mostrarError(this, 'Debe ingresar la calle y número');
-        } else {
-            quitarError(this);
-        }
-    });
-
-    // La fecha se establece automáticamente
-
-    // Enviar formulario
-    formularioBeneficiario.addEventListener('submit', function (e) {
-        e.preventDefault();
-
-        let esValido = true;
-
-        // Validar todos los campos
-        if (numeroContrato.value.trim() === '' || isNaN(numeroContrato.value)) {
-            mostrarError(numeroContrato, 'Número de contrato inválido');
-            esValido = false;
-        }
-        if (numeroMedidor.value.trim() === '' || isNaN(numeroMedidor.value)) {
-            mostrarError(numeroMedidor, 'Número de medidor inválido');
-            esValido = false;
-        }
-        if (nombreBeneficiario.value.trim() === '' || nombreBeneficiario.value.length < 3) {
-            mostrarError(nombreBeneficiario, 'Nombre inválido');
-            esValido = false;
-        }
-        if (calleNumero.value.trim() === '') {
-            mostrarError(calleNumero, 'Calle y número requerido');
-            esValido = false;
-        }
-
-        if (esValido) {
-            // Verificar conexión a internet
-            if (!navigator.onLine) {
-                mostrarAlerta('Sin Conexión', 'No hay conexión a internet. Verifica tu conexión e intenta nuevamente.', 'error');
+            if (!id) {
+                console.error('No ID found in dataset');
+                showModal('Error', 'Error interno: ID no encontrado', 'error');
                 return;
             }
 
-            // Establecer fecha de registro
-            const fechaAlta = document.getElementById('registrationDate');
-            fechaAlta.value = new Date().toISOString().split('T')[0];
+            // Validate fields
+            let v = true;
+            if (editName.value.trim().length < 3) { mostrarError(editName, 'Inválido'); v = false; }
+            if (editContract.value.trim() === '' || isNaN(editContract.value)) { mostrarError(editContract, 'Inválido'); v = false; }
+            if (editMeter.value.trim() === '' || isNaN(editMeter.value)) { mostrarError(editMeter, 'Inválido'); v = false; }
+            if (editStreet.value.trim() === '') { mostrarError(editStreet, 'Requerido'); v = false; }
+            if (!v) return;
 
-            // Mostrar alerta de carga
-            const alertaCarga = mostrarAlerta('Guardando', 'Por favor espera mientras se guarda el beneficiario...', 'loading');
-            botonGuardar.disabled = true;
+            const currentName = document.getElementById('editBeneficiaryName').value;
+            console.log('Nombre actual:', currentName, 'Original:', originalName);
+            const currentStreet = document.getElementById('editStreetAndNumber').value;
 
-            // Enviar formulario
-            const formData = new FormData(this);
-            fetch('../controladores/beneficiarios.php', {
-                method: 'POST',
-                body: formData
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Error en la respuesta del servidor');
+            const nameChanged = currentName !== originalName;
+            const streetChanged = currentStreet !== originalStreet;
+
+            if (nameChanged || streetChanged) {
+                closeEditModal();
+                let msg = '';
+                if (nameChanged) msg += `Cambio de nombre (<b>${originalName}</b> → <b>${currentName}</b>).<br>`;
+                if (streetChanged) msg += `Cambio de calle (<b>${originalStreet}</b> → <b>${currentStreet}</b>).<br>`;
+                msg += `<br>¿El usuario tiene adeudos pendientes?`;
+
+                showDebtCheckModal('Verificación de Adeudos', msg,
+                    () => { console.log('Confirmado sin adeudos'); proceedUpdate(id); },
+                    () => {
+                        showModal('Acción Denegada', 'No se pueden realizar estos cambios si el usuario tiene adeudos pendientes.', 'error');
+                        setTimeout(() => { editModalBackdrop.classList.add('show'); editModalBackdrop.style.display = 'flex'; }, 4500);
                     }
-                    return response.json();
-                })
-                .then(data => {
-                    // Cerrar alerta de carga
-                    alertaCarga.classList.remove('show');
-                    setTimeout(() => {
-                        if (document.body.contains(alertaCarga)) {
-                            document.body.removeChild(alertaCarga);
-                        }
-                    }, 300);
-
-                    if (data.success) {
-                        mostrarAlerta('Éxito', 'Beneficiario guardado correctamente', 'success');
-                        formularioBeneficiario.reset();
-                        localStorage.setItem('activeTab', 'list');
-                        setTimeout(() => location.reload(), 1500);
-                    } else {
-                        mostrarAlerta('Error', data.message || 'Error al guardar', 'error');
-                    }
-                })
-                .catch(error => {
-                    // Cerrar alerta de carga
-                    alertaCarga.classList.remove('show');
-                    setTimeout(() => {
-                        if (document.body.contains(alertaCarga)) {
-                            document.body.removeChild(alertaCarga);
-                        }
-                    }, 300);
-
-                    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-                        mostrarAlerta('Error de Conexión', 'No se pudo conectar al servidor. Verifica tu conexión a internet.', 'error');
-                    } else {
-                        mostrarAlerta('Error', 'Error al guardar: ' + error.message, 'error');
-                    }
-                })
-                .finally(() => {
-                    botonGuardar.disabled = false;
-                });
-        }
-    });
-
-    // Cancelar
-    botonCancelar.addEventListener('click', function () {
-        formularioBeneficiario.reset();
-        // Quitar errores
-        [numeroContrato, numeroMedidor, nombreBeneficiario, calleNumero].forEach(campo => quitarError(campo));
-    });
-
-    // Hover para botón guardar
-    botonGuardar.addEventListener('mouseover', function () {
-        this.style.backgroundColor = '#004085';
-        this.style.borderColor = '#004085';
-    });
-    botonGuardar.addEventListener('mouseout', function () {
-        this.style.backgroundColor = '#0056b3';
-        this.style.borderColor = '#0056b3';
-    });
-
-    // Modal handlers
-    document.getElementById('modalClose').addEventListener('click', function () {
-        document.getElementById('modal').style.display = 'none';
-        document.getElementById('editForm').reset();
-    });
-
-    document.getElementById('modalCancel').addEventListener('click', function () {
-        document.getElementById('modal').style.display = 'none';
-        document.getElementById('editForm').reset();
-    });
-
-    // Validación para edición
-    const editBeneficiaryName = document.getElementById('editBeneficiaryName');
-    const editContractNumber = document.getElementById('editContractNumber');
-    const editMeterNumber = document.getElementById('editMeterNumber');
-    const editStreetAndNumber = document.getElementById('editStreetAndNumber');
-
-    editContractNumber.addEventListener('input', function () {
-        if (this.value.trim() === '' || isNaN(this.value)) {
-            mostrarError(this, 'Debe ingresar un número válido');
-        } else {
-            quitarError(this);
-        }
-    });
-
-    editMeterNumber.addEventListener('input', function () {
-        if (this.value.trim() === '' || isNaN(this.value)) {
-            mostrarError(this, 'Debe ingresar un número válido');
-        } else {
-            quitarError(this);
-        }
-    });
-
-    editBeneficiaryName.addEventListener('input', function () {
-        if (this.value.trim() === '' || this.value.length < 3) {
-            mostrarError(this, 'El nombre debe tener al menos 3 caracteres');
-        } else {
-            quitarError(this);
-        }
-    });
-
-    editStreetAndNumber.addEventListener('input', function () {
-        if (this.value.trim() === '') {
-            mostrarError(this, 'Debe ingresar la calle y número');
-        } else {
-            quitarError(this);
-        }
-    });
-
-    document.getElementById('saveEditButton').addEventListener('click', function () {
-        const formData = new FormData(document.getElementById('editForm'));
-        formData.append('action', 'update');
-
-        // Validar
-        let esValido = true;
-
-        if (editContractNumber.value.trim() === '' || isNaN(editContractNumber.value)) {
-            mostrarError(editContractNumber, 'Número de contrato inválido');
-            esValido = false;
-        }
-        if (editMeterNumber.value.trim() === '' || isNaN(editMeterNumber.value)) {
-            mostrarError(editMeterNumber, 'Número de medidor inválido');
-            esValido = false;
-        }
-        if (editBeneficiaryName.value.trim() === '' || editBeneficiaryName.value.length < 3) {
-            mostrarError(editBeneficiaryName, 'Nombre inválido');
-            esValido = false;
-        }
-        if (editStreetAndNumber.value.trim() === '') {
-            mostrarError(editStreetAndNumber, 'Calle y número requerido');
-            esValido = false;
-        }
-
-        if (esValido) {
-            // Mostrar alerta de carga
-            const alertaCarga = mostrarAlerta('Actualizando', 'Por favor espera mientras se actualiza el beneficiario...', 'loading');
-            document.getElementById('saveEditButton').disabled = true;
-
-            fetch('../controladores/beneficiarios.php', {
-                method: 'POST',
-                body: formData
-            })
-                .then(response => response.json())
-                .then(data => {
-                    // Cerrar alerta de carga
-                    alertaCarga.classList.remove('show');
-                    setTimeout(() => {
-                        if (document.body.contains(alertaCarga)) {
-                            document.body.removeChild(alertaCarga);
-                        }
-                    }, 300);
-
-                    if (data.success) {
-                        mostrarAlerta('Actualizado', 'Beneficiario actualizado correctamente', 'success');
-                        document.getElementById('modal').style.display = 'none';
-                        localStorage.setItem('activeTab', 'list');
-                        document.getElementById('editForm').reset();
-                        setTimeout(() => location.reload(), 1500);
-                    } else {
-                        mostrarAlerta('Error', data.message || 'Error al actualizar', 'error');
-                    }
-                })
-                .catch(error => {
-                    // Cerrar alerta de carga
-                    alertaCarga.classList.remove('show');
-                    setTimeout(() => {
-                        if (document.body.contains(alertaCarga)) {
-                            document.body.removeChild(alertaCarga);
-                        }
-                    }, 300);
-                    mostrarAlerta('Error', 'Error al actualizar', 'error');
-                })
-                .finally(() => {
-                    document.getElementById('saveEditButton').disabled = false;
-                });
-        }
-    });
-
-    // Establecer fecha de hoy
-    document.getElementById('registrationDate').value = new Date().toISOString().split('T')[0];
-
-    // Cargar calles para selects
-    fetch('../controladores/beneficiarios.php?action=get_streets')
-        .then(respuesta => respuesta.json())
-        .then(datos => {
-            if (datos.success) {
-                const select_calle = document.getElementById('streetAndNumber');
-                const filtro_calle = document.getElementById('streetFilter');
-                const edit_calle = document.getElementById('editStreetAndNumber');
-                datos.streets.forEach(calle => {
-                    // Para select de agregar
-                    const opcion_agregar = document.createElement('option');
-                    opcion_agregar.value = calle;
-                    opcion_agregar.textContent = calle;
-                    select_calle.appendChild(opcion_agregar);
-
-                    // Para filtro
-                    const opcion_filtro = document.createElement('option');
-                    opcion_filtro.value = calle;
-                    opcion_filtro.textContent = calle;
-                    filtro_calle.appendChild(opcion_filtro);
-
-                    // Para editar
-                    const opcion_editar = document.createElement('option');
-                    opcion_editar.value = calle;
-                    opcion_editar.textContent = calle;
-                    edit_calle.appendChild(opcion_editar);
+                );
+            } else {
+                closeEditModal();
+                showModal('¿Confirmar Cambios?', '¿Estás seguro de guardar los cambios?', 'warning', () => {
+                    console.log('Confirmado guardar cambios');
+                    proceedUpdate(id);
                 });
             }
-        })
-        .catch(error => console.error('Error al cargar calles:', error));
+        });
+    }
+
+    function confirmarEliminacion(id) {
+        showModal('Confirmar Eliminación', '¿Estás seguro de eliminar este beneficiario? Esta acción no se puede deshacer.', 'warning', () => {
+            mostrarLoading(true);
+            const formData = new FormData();
+            formData.append('action', 'delete');
+            formData.append('id', id);
+            fetch('../controladores/beneficiarios.php', { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(data => {
+                    mostrarLoading(false);
+                    if (data.success) {
+                        showModal('Éxito', 'Beneficiario eliminado correctamente', 'success');
+                        const row = document.querySelector(`.card-wrapper[data-id="${id}"]`);
+                        if (row) row.remove();
+                    } else {
+                        showModal('No se puede eliminar', data.message || 'Error', 'error');
+                    }
+                })
+                .catch(() => { mostrarLoading(false); showModal('Error', 'Error de conexión', 'error'); });
+        });
+    }
+
+    // --- Validation Helpers & Init ---
+    function mostrarError(c, m) {
+        c.style.borderColor = 'red'; c.style.boxShadow = '0 0 0 3px rgba(244,67,54,0.1)';
+        let s = c.parentElement.querySelector('.error-message');
+        if (!s) { s = document.createElement('span'); s.className = 'error-message'; s.style.color = 'red'; s.style.fontSize = '0.8rem'; c.parentElement.appendChild(s); }
+        s.textContent = m;
+    }
+    function quitarError(c) {
+        c.style.borderColor = '#ddd'; c.style.boxShadow = 'none';
+        const s = c.parentElement.querySelector('.error-message'); if (s) s.textContent = '';
+    }
+
+    function inicializarCallesYBarrios() {
+        fetch('../controladores/beneficiarios.php?action=get_calles').then(r => r.json()).then(d => {
+            if (d.success) {
+                const sel = document.getElementById('streetAndNumber');
+                d.calles.forEach(c => {
+                    const oF = document.createElement('option'); oF.value = c; oF.textContent = c; if (streetFilter) streetFilter.appendChild(oF);
+                    if (sel) { const oA = document.createElement('option'); oA.value = c; oA.textContent = c; sel.appendChild(oA); }
+                });
+            }
+        });
+        fetch('../controladores/beneficiarios.php?action=get_barrios').then(r => r.json()).then(d => {
+            if (d.success) d.barrios.forEach(b => {
+                const o = document.createElement('option'); o.value = b; o.textContent = b; if (barrioFilter) barrioFilter.appendChild(o);
+            });
+        });
+    }
+    inicializarCallesYBarrios();
+
+    // --- Add Form Logic ---
+    const formAdd = document.getElementById('beneficiaryForm');
+    const inCon = document.getElementById('contractNumber');
+    const inMed = document.getElementById('meterNumber');
+    const inNom = document.getElementById('beneficiaryName');
+    const inCal = document.getElementById('streetAndNumber');
+    const btnCan = document.getElementById('cancelButton'); // Existing cancel button in add form
+
+    if (document.getElementById('registrationDate')) document.getElementById('registrationDate').value = new Date().toISOString().split('T')[0];
+
+    // Real-time validation
+    if (inCon) inCon.addEventListener('input', function () { if (this.value.trim() === '' || isNaN(this.value)) mostrarError(this, 'Inválido'); else quitarError(this); });
+    if (inMed) inMed.addEventListener('input', function () { if (this.value.trim() === '' || isNaN(this.value)) mostrarError(this, 'Inválido'); else quitarError(this); });
+    if (inNom) inNom.addEventListener('input', function () { if (this.value.length < 3) mostrarError(this, 'Mínimo 3 caracteres'); else quitarError(this); });
+    if (inCal) inCal.addEventListener('input', function () { if (this.value.trim() === '') mostrarError(this, 'Requerido'); else quitarError(this); });
+
+    if (formAdd) {
+        formAdd.addEventListener('submit', function (e) {
+            e.preventDefault();
+            let v = true;
+            if (inCon.value.trim() === '' || isNaN(inCon.value)) { mostrarError(inCon, 'Inválido'); v = false; }
+            if (inMed.value.trim() === '' || isNaN(inMed.value)) { mostrarError(inMed, 'Inválido'); v = false; }
+            if (inNom.value.trim().length < 3) { mostrarError(inNom, 'Inválido'); v = false; }
+            if (inCal.value.trim() === '') { mostrarError(inCal, 'Requerido'); v = false; }
+
+            if (!v) return;
+            if (!navigator.onLine) { showModal('Sin Conexión', 'Verifica internet', 'error'); return; }
+
+            mostrarLoading(true);
+            const fd = new FormData(this);
+            fetch('../controladores/beneficiarios.php', { method: 'POST', body: fd })
+                .then(r => r.json())
+                .then(d => {
+                    mostrarLoading(false);
+                    if (d.success) {
+                        showModal('Éxito', 'Guardado correctamente', 'success');
+                        formAdd.reset();
+                        [inCon, inMed, inNom, inCal].forEach(quitarError);
+                        localStorage.setItem('activeTab', 'list');
+                        setTimeout(() => location.reload(), 1500);
+                    } else showModal('Error', d.message || 'Error', 'error');
+                })
+                .catch(e => { mostrarLoading(false); showModal('Error', e.message, 'error'); });
+        });
+        if (btnCan) btnCan.addEventListener('click', () => { formAdd.reset();[inCon, inMed, inNom, inCal].forEach(quitarError); });
+    }
 });

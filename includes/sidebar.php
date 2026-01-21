@@ -36,7 +36,7 @@
         <li>
             <a href="clientes.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'clientes.php' ? 'active' : ''; ?>">
                 <i class="fas fa-users"></i>
-                <span>Beneficiarios</span>
+                <span>Lista de Beneficiarios</span>
             </a>
         </li>
         <li>

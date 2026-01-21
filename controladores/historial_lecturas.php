@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
                  JOIN usuarios_servicio us ON l.id_usuario = us.id_usuario
                  JOIN domicilios d ON us.id_domicilio = d.id_domicilio
                  $where_sql
-                 ORDER BY l.fecha_lectura $orden
+                 ORDER BY l.created_at $orden
                  LIMIT ? OFFSET ?";
         $stmt = $conn->prepare($sql);
         $params[] = $limite;

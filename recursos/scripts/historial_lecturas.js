@@ -64,6 +64,9 @@ document.addEventListener('DOMContentLoaded', function () {
     let totalPaginas = 1;
     const limitePorPagina = 12;
     let timeoutBusqueda = null;
+    let autoRefreshInterval = null;
+    let autoRefreshActive = true;
+    let isLoading = false;
 
     // Estado de filtros
     let filtrosEstado = {
@@ -469,11 +472,13 @@ document.addEventListener('DOMContentLoaded', function () {
     // Eventos para modal de vista
     viewCloseBtn.addEventListener('click', () => {
         viewModalBackdrop.style.display = 'none';
+        reanudarAutoRefresh();
     });
 
     viewModalBackdrop.addEventListener('click', (e) => {
         if (e.target === viewModalBackdrop) {
             viewModalBackdrop.style.display = 'none';
+            reanudarAutoRefresh();
         }
     });
 
@@ -499,6 +504,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     viewObservaciones.textContent = lectura.observaciones || 'Sin observaciones';
                     viewAgregado.textContent = new Date(lectura.created_at).toLocaleString('es-ES');
 
+                    pausarAutoRefresh();
                     viewModalBackdrop.style.display = 'flex';
                 } else {
                     showModal('Error', 'No se pudo cargar la información de la lectura', 'error');
@@ -512,7 +518,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Mostrar/ocultar loading
     function mostrarLoading(mostrar) {
+        isLoading = mostrar;
         loadingOverlay.style.display = mostrar ? 'flex' : 'none';
+    }
+
+    // Controlar auto-refresh
+    function pausarAutoRefresh() {
+        autoRefreshActive = false;
+    }
+
+    function reanudarAutoRefresh() {
+        autoRefreshActive = true;
     }
 
     // Función para mostrar modal personalizado
@@ -581,10 +597,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (onConfirm) onConfirm();
             };
             modalActions.appendChild(okBtn);
-        }
-
-        modalBackdrop.classList.add('show');
-        modalBackdrop.style.display = 'flex';
+            }
+    
+            pausarAutoRefresh();
+            modalBackdrop.classList.add('show');
+            modalBackdrop.style.display = 'flex';
 
         if (type === 'success' || type === 'error') {
             setTimeout(() => {
@@ -597,6 +614,7 @@ document.addEventListener('DOMContentLoaded', function () {
         modalBackdrop.classList.remove('show');
         setTimeout(() => {
             modalBackdrop.style.display = 'none';
+            reanudarAutoRefresh();
         }, 300);
     }
 
@@ -604,6 +622,7 @@ document.addEventListener('DOMContentLoaded', function () {
         editModalBackdrop.classList.remove('show');
         setTimeout(() => {
             editModalBackdrop.style.display = 'none';
+            reanudarAutoRefresh();
         }, 300);
     }
 
@@ -721,6 +740,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     editForm.dataset.id = id;
 
+                    pausarAutoRefresh();
                     editModalBackdrop.classList.add('show');
                     editModalBackdrop.style.display = 'flex';
                 } else {
@@ -766,4 +786,11 @@ document.addEventListener('DOMContentLoaded', function () {
     inicializarFechas();
     inicializarUbicacion();
     cargarHistorial();
+
+    // Auto-refresh cada 15 segundos
+    autoRefreshInterval = setInterval(() => {
+        if (autoRefreshActive && !isLoading) {
+            cargarHistorial(paginaActual);
+        }
+    }, 15000);
 });

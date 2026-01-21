@@ -5,26 +5,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
     header('Content-Type: application/json');
     $action = $_GET['action'];
 
-    if ($action === 'get') {
-        $id = $_GET['id'] ?? '';
-        if (empty($id)) {
-            echo json_encode(['success' => false, 'message' => 'ID requerido']);
-            exit;
-        }
-        $stmt = $conn->prepare("SELECT us.*, d.calle FROM usuarios_servicio us JOIN domicilios d ON us.id_domicilio = d.id_domicilio WHERE us.id_usuario = ?");
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        $resultado = $stmt->get_result();
-        if ($resultado->num_rows > 0) {
-            $beneficiario = $resultado->fetch_assoc();
-            echo json_encode(['success' => true, 'beneficiario' => $beneficiario]);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Beneficiario no encontrado']);
-        }
-        $conn->close();
-        exit;
-    }
-
     if ($action === 'get_calles') {
         $consulta = $conn->prepare("SELECT DISTINCT calle FROM domicilios ORDER BY calle");
         $consulta->execute();
@@ -34,6 +14,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
             $calles[] = $fila['calle'];
         }
         echo json_encode(['success' => true, 'calles' => $calles]);
+        $conn->close();
+        exit;
+    }
+
+    if ($action === 'get_barrios') {
+        $consulta = $conn->prepare("SELECT DISTINCT barrio FROM domicilios ORDER BY barrio");
+        $consulta->execute();
+        $resultado = $consulta->get_result();
+        $barrios = [];
+        while ($fila = $resultado->fetch_assoc()) {
+            $barrios[] = $fila['barrio'];
+        }
+        echo json_encode(['success' => true, 'barrios' => $barrios]);
+        $conn->close();
+        exit;
+    }
+
+    if ($action === 'get_usuario') {
+        $id = $_GET['id'] ?? '';
+        if (empty($id)) {
+            echo json_encode(['success' => false, 'message' => 'ID requerido']);
+            exit;
+        }
+        $consulta = $conn->prepare("SELECT us.*, d.calle, d.barrio FROM usuarios_servicio us JOIN domicilios d ON us.id_domicilio = d.id_domicilio WHERE us.id_usuario = ?");
+        $consulta->bind_param("i", $id);
+        $consulta->execute();
+        $resultado = $consulta->get_result();
+        if ($fila = $resultado->fetch_assoc()) {
+            echo json_encode(['success' => true, 'usuario' => $fila]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Usuario no encontrado']);
+        }
+        $conn->close();
+        exit;
+    }
+
+    if ($action === 'get_beneficiarios') {
+        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+        $limit = 15;
+        $offset = ($page - 1) * $limit;
+        $sql = "SELECT us.*, d.calle, d.barrio FROM usuarios_servicio us JOIN domicilios d ON us.id_domicilio = d.id_domicilio ORDER BY us.fecha_alta DESC LIMIT ? OFFSET ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ii", $limit, $offset);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $beneficiarios = [];
+        while ($row = $result->fetch_assoc()) {
+            $beneficiarios[] = $row;
+        }
+        // Get total count
+        $consulta = $conn->prepare("SELECT COUNT(*) as total FROM usuarios_servicio");
+        $consulta->execute();
+        $resultado = $consulta->get_result();
+        $fila = $resultado->fetch_assoc();
+        $total = $fila['total'];
+        echo json_encode(['success' => true, 'beneficiarios' => $beneficiarios, 'total' => $total, 'page' => $page, 'limit' => $limit]);
         $conn->close();
         exit;
     }
@@ -50,6 +86,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['success' => false, 'message' => 'ID requerido']);
             exit;
         }
+
+        // Verificar si tiene lecturas
+        $check = $conn->prepare("SELECT count(*) as total FROM lecturas WHERE id_usuario = ?");
+        $check->bind_param("i", $id);
+        $check->execute();
+        $res = $check->get_result();
+        $row = $res->fetch_assoc();
+        
+        if ($row['total'] > 0) {
+            echo json_encode(['success' => false, 'message' => 'No se puede eliminar porque este beneficiario tiene lecturas registradas.']);
+            exit;
+        }
+
         $consulta = $conn->prepare("DELETE FROM usuarios_servicio WHERE id_usuario = ?");
         $consulta->bind_param("i", $id);
         if ($consulta->execute()) {
@@ -114,12 +163,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Actualizar
-        $consulta = $conn->prepare("UPDATE usuarios_servicio SET no_contrato = ?, no_medidor = ?, nombre = ?, nome_anterior = ?, id_domicilio = ?, activo = ? WHERE id_usuario = ?");
-        // Note: I need to make sure column name is correct. I used 'nombre_anterior'. 
-        // Wait, the previous turn script used 'nombre_anterior'.
-        // Let me check the column name I created.
-        // I ran `ALTER TABLE ... ADD COLUMN nombre_anterior ...`.
-        // So column is `nombre_anterior`.
         $consulta = $conn->prepare("UPDATE usuarios_servicio SET no_contrato = ?, no_medidor = ?, nombre = ?, nombre_anterior = ?, id_domicilio = ?, activo = ? WHERE id_usuario = ?");
         $consulta->bind_param("ssssiii", $numero_contrato, $numero_medidor, $nombre, $nombre_anterior_db, $id_domicilio, $activo, $id);
         
