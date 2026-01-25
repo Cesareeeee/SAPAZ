@@ -39,6 +39,7 @@
 .beneficiary-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 12px 35px rgba(59, 130, 246, 0.2);
+    cursor: pointer;
 }
 
 /* Card wrapper to hold card and buttons */
@@ -664,7 +665,7 @@
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.6);
-    z-index: 9999;
+    z-index: 10001;
     justify-content: center;
     align-items: center;
     backdrop-filter: blur(5px);
@@ -898,10 +899,204 @@
 
 /* removed empty ruleset */
 
+/* Lecturas Modal Styles */
+.lecturas-modal-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.lecturas-modal-backdrop.show {
+    opacity: 1;
+    display: flex;
+}
+
+.lecturas-modal-container {
+    background: #ffffff;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 1200px;
+    max-height: 80vh;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+    transform: scale(0.8);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.lecturas-modal-backdrop.show .lecturas-modal-container {
+    transform: scale(1);
+}
+
+.lecturas-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 20px 20px 0 0;
+}
+
+.lecturas-modal-header h3 {
+    margin: 0;
+    color: #1e40af;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.lecturas-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #64748b;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.lecturas-close-btn:hover {
+    background: #e2e8f0;
+    color: #374151;
+}
+
+.lecturas-modal-body {
+    padding: 2rem;
+    max-height: calc(80vh - 80px);
+    overflow-y: auto;
+}
+
+.lecturas-info {
+    margin-bottom: 1.5rem;
+}
+
+.lecturas-user-info {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #000000;
+    padding: 1rem;
+    background: linear-gradient(135deg, #87ceeb 0%, #87ceeb 100%);
+    border-radius: 12px;
+    border: 1px solid #87ceeb;
+    box-shadow: 0 4px 15px rgba(135, 206, 235, 0.3);
+}
+
+.lecturas-table-container {
+    overflow-x: auto;
+}
+
+.lecturas-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.lecturas-table th {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: #ffffff;
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.lecturas-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 0.9rem;
+    color: #374151;
+}
+
+.lecturas-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.lecturas-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Responsive for lecturas modal */
+@media (max-width: 768px) {
+    .lecturas-modal-container {
+        width: 95%;
+        max-height: 90vh;
+    }
+
+    .lecturas-modal-header {
+        padding: 1rem 1.5rem;
+    }
+
+    .lecturas-modal-header h3 {
+        font-size: 1.2rem;
+    }
+
+    .lecturas-modal-body {
+        padding: 1rem;
+    }
+
+    .lecturas-table th,
+    .lecturas-table td {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    .lecturas-user-info {
+        font-size: 1rem;
+        padding: 0.75rem;
+    }
+}
+
 .edit-btn-save:hover {
     background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    border-radius: 0.2rem;
+}
+
+.card-action-btn {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: #ffffff;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.card-action-btn:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.card-action-btn i {
+    margin-right: 0.5rem;
 }
 
 /* Form Styles from lecturas.css for consistent design */
@@ -1097,4 +1292,155 @@
     .edit-btn {
         width: 100%;
     }
+}
+
+/* Lecturas agrupadas por mes */
+.lecturas-mes-section {
+    margin-bottom: 2rem;
+}
+
+/* Mes Section Title */
+.lecturas-mes-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e40af;
+    margin: 1.5rem 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.lecturas-mes-title i {
+    color: #3b82f6;
+}
+
+/* Improved Lecturas Modal Table Styles */
+.table-responsive {
+    overflow-x: auto;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    margin-bottom: 1rem;
+}
+
+.lecturas-table {
+    width: 100%;
+    border-collapse: separate;
+    /* Changed for border-radius on rows/cells */
+    border-spacing: 0;
+    min-width: 600px;
+    /* Ensure it doesn't squish too much */
+}
+
+.lecturas-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    padding: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.lecturas-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b;
+    font-size: 0.9rem;
+    vertical-align: middle;
+}
+
+.lecturas-table tr:last-child td {
+    border-bottom: none;
+}
+
+.lecturas-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    white-space: nowrap;
+}
+
+.status-badge.paid {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.status-badge.warning {
+    /* Pendiente */
+    background-color: #fef9c3;
+    color: #854d0e;
+}
+
+.status-badge.neutral {
+    /* Sin Factura */
+    background-color: #f1f5f9;
+    color: #475569;
+}
+
+.status-badge.canceled {
+    /* Cancelado */
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+/* Main Container Padding Override if needed */
+
+/* Responsive for card-action-btn */
+@media (max-width: 768px) {
+    .card-action-btn {
+        font-size: 0.7rem;
+        padding: 0.3rem 0.6rem;
+        margin-right: 0.25rem !important;
+        margin-bottom: 0.5rem;
+    }
+}
+.lecturas-modal-body {
+    background-color: #ffffff;
+}
+
+/* Improve User Info Header in Modal */
+.lecturas-user-info {
+    background: linear-gradient(to right, #eff6ff, #ffffff);
+    border: 1px solid #dbeafe;
+    color: #1e3a8a;
+    padding: 1rem 1.5rem;
+    margin-bottom: 2rem;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.05);
+}
+
+/* Scrollbar styling for modal */
+.lecturas-modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.lecturas-modal-body::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+.lecturas-modal-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.lecturas-modal-body::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }

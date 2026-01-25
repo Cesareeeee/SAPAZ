@@ -8,8 +8,8 @@ require_once '../controladores/beneficiarios.php';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SAPAZ - Beneficiarios</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../recursos/estilos/panel_admin.css?v=1.222233332320">
-    <link rel="stylesheet" href="../recursos/estilos/clientes.css?v=1.233332232323322">
+    <link rel="stylesheet" href="../recursos/estilos/panel_admin.css?v=1.3332345223333333335">
+    <link rel="stylesheet" href="../recursos/estilos/clientes.css?v=34223483">
 </head>
 <body>
    
@@ -130,7 +130,7 @@ require_once '../controladores/beneficiarios.php';
                         </div>
                     </div>
                     <div class="cards-container" id="beneficiariesTableBody">
-                        <div id='noResultsRow' class='no-results'>Cargando beneficiarios...</div>
+                        <!-- Beneficiarios se cargarán aquí -->
                     </div>
                     <div class="pagination">
                         <button id="prevPage" class="btn btn-outline" disabled><i class="fas fa-chevron-left"></i> Anterior</button>
@@ -231,6 +231,9 @@ require_once '../controladores/beneficiarios.php';
         <div class="view-modal-container">
             <div class="view-modal-header">
                 <h3><i class="fas fa-eye"></i> Detalles del Beneficiario</h3>
+                <button type="button" class="btn btn-primary" id="viewLecturasBtn" style="margin-left: auto; margin-right: 10px;">
+                    <i class="fas fa-list"></i> Ver historial de lecturas
+                </button>
                 <button class="view-close-btn" id="viewCloseBtn"><i class="fas fa-times"></i></button>
             </div>
             <div class="view-modal-form">
@@ -274,6 +277,26 @@ require_once '../controladores/beneficiarios.php';
         </div>
     </div>
 
+    <!-- Lecturas Modal -->
+    <div class="lecturas-modal-backdrop" id="lecturasModalBackdrop">
+        <div class="lecturas-modal-container">
+            <div class="lecturas-modal-header">
+                <h3><i class="fas fa-chart-line"></i> Historial de Lecturas</h3>
+                <button class="lecturas-close-btn" id="lecturasCloseBtn"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="lecturas-modal-body">
+                <div class="lecturas-info">
+                    <div class="lecturas-user-info">
+                        <i class="fas fa-user"></i> &nbsp;&nbsp; <span id="lecturasNombre"></span> &nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp; <i class="fas fa-tachometer-alt"></i> &nbsp;&nbsp; Medidor: &nbsp;&nbsp; <span id="lecturasMedidor" style="background-color: #87ceeb; color: black; padding: 0.25rem 0.5rem; border-radius: 4px;"></span>
+                    </div>
+                </div>
+                <div class="lecturas-table-container" id="lecturasContainer">
+                    <!-- Lecturas agrupadas por mes se cargarán aquí -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Notification -->
     <div class="notification" id="notification">
         <div class="notification-icon success">
@@ -285,7 +308,7 @@ require_once '../controladores/beneficiarios.php';
         </div>
     </div>
 
-    <script src="../recursos/scripts/panel_admin.js?v=1.333220"></script>
-    <script src="../recursos/scripts/validacion_beneficiarios.js?v=22232.232333442"></script>
+    <script src="../recursos/scripts/panel_admin.js?v=1.3332420"></script>
+    <script src="../recursos/scripts/validacion_beneficiarios.js?v=3464"></script>
 </body>
 </html>

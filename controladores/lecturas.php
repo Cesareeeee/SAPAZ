@@ -144,6 +144,89 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
         $conn->close();
         exit;
     }
+
+    if ($action === 'get_lecturas_usuario') {
+        $id_usuario = $_GET['id_usuario'] ?? '';
+        if (empty($id_usuario)) {
+            echo json_encode(['success' => false, 'message' => 'ID de usuario requerido']);
+            exit;
+        }
+        // Obtener todas las lecturas del usuario, con info de pago, agrupadas por mes
+        $stmt = $conn->prepare("
+            SELECT l.id_lectura, l.fecha_lectura, l.consumo_m3, l.observaciones, l.lectura_actual, l.lectura_anterior,
+                    IFNULL(f.estado, 'Sin Factura') AS estado_pago,
+                    MONTH(l.fecha_lectura) AS mes, YEAR(l.fecha_lectura) AS anio
+            FROM lecturas l
+            LEFT JOIN facturas f ON l.id_lectura = f.id_lectura
+            WHERE l.id_usuario = ?
+            ORDER BY l.fecha_lectura DESC
+        ");
+        $stmt->bind_param("i", $id_usuario);
+        $stmt->execute();
+        $resultado = $stmt->get_result();
+        $lecturas_agrupadas = [];
+        $meses = [
+            1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril', 5 => 'Mayo', 6 => 'Junio',
+            7 => 'Julio', 8 => 'Agosto', 9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
+        ];
+        while ($row = $resultado->fetch_assoc()) {
+            $mes_anio = $meses[$row['mes']] . ' ' . $row['anio'];
+            if (!isset($lecturas_agrupadas[$mes_anio])) {
+                $lecturas_agrupadas[$mes_anio] = [];
+            }
+            unset($row['mes'], $row['anio']); // Remover campos auxiliares
+            $lecturas_agrupadas[$mes_anio][] = $row;
+        }
+
+        // Obtener datos del usuario independientemente de si tiene lecturas
+        $stmtUsuario = $conn->prepare("SELECT nombre, no_medidor FROM usuarios_servicio WHERE id_usuario = ?");
+        $stmtUsuario->bind_param("i", $id_usuario);
+        $stmtUsuario->execute();
+        $resUsuario = $stmtUsuario->get_result();
+        $usuarioData = $resUsuario->fetch_assoc();
+        
+        echo json_encode([
+            'success' => true,
+            'lecturas' => $lecturas_agrupadas,
+            'usuario' => $usuarioData // Send user info
+        ]);
+        $conn->close();
+        exit;
+    }
+
+    if ($action === 'update_estado_pago') {
+        $id_lectura = $_GET['id_lectura'] ?? '';
+        $estado = $_GET['estado'] ?? '';
+        if (empty($id_lectura) || empty($estado)) {
+            echo json_encode(['success' => false, 'message' => 'ID de lectura y estado requeridos']);
+            exit;
+        }
+        if (!in_array($estado, ['Pagado', 'Pendiente', 'Cancelado'])) {
+            echo json_encode(['success' => false, 'message' => 'Estado inválido']);
+            exit;
+        }
+        // Verificar si existe factura para esta lectura
+        $stmtCheck = $conn->prepare("SELECT id_factura FROM facturas WHERE id_lectura = ?");
+        $stmtCheck->bind_param("i", $id_lectura);
+        $stmtCheck->execute();
+        $resCheck = $stmtCheck->get_result();
+        if ($resCheck->num_rows > 0) {
+            // Actualizar estado
+            $stmt = $conn->prepare("UPDATE facturas SET estado = ? WHERE id_lectura = ?");
+            $stmt->bind_param("si", $estado, $id_lectura);
+        } else {
+            // Insertar nueva factura con estado
+            $stmt = $conn->prepare("INSERT INTO facturas (id_lectura, estado, fecha_emision) VALUES (?, ?, NOW())");
+            $stmt->bind_param("is", $id_lectura, $estado);
+        }
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error al actualizar estado']);
+        }
+        $conn->close();
+        exit;
+    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

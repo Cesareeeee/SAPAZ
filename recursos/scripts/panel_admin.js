@@ -80,7 +80,9 @@ if (formularioLectura) {
     formularioLectura.addEventListener('submit', (e) => {
         e.preventDefault();
         mostrarNotificacion('Éxito', 'Lectura guardada correctamente', 'success');
-        formularioLectura.reset();
+        if (formularioLectura && typeof formularioLectura.reset === 'function') {
+            formularioLectura.reset();
+        }
     });
 }
 

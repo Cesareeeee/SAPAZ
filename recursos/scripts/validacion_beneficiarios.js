@@ -73,6 +73,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const viewModalBackdrop = document.getElementById('viewModalBackdrop');
     const viewCloseBtn = document.getElementById('viewCloseBtn');
 
+    const lecturasModalBackdrop = document.getElementById('lecturasModalBackdrop');
+    const lecturasCloseBtn = document.getElementById('lecturasCloseBtn');
+    const viewLecturasBtn = document.getElementById('viewLecturasBtn');
+
     // --- Load Beneficiaries Function ---
     function loadBeneficiaries(page = 1) {
         mostrarLoading(true);
@@ -133,12 +137,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     document.getElementById('prevPage').disabled = currentPage <= 1;
                     document.getElementById('nextPage').disabled = currentPage >= totalPages;
                     document.querySelector('.pagination').style.display = totalPages > 0 ? 'flex' : 'none';
-                    const noResultsRow = document.getElementById('noResultsRow');
                     if (data.beneficiarios.length === 0) {
-                        noResultsRow.textContent = 'No hay beneficiarios registrados';
-                        noResultsRow.style.display = 'block';
-                    } else {
-                        noResultsRow.style.display = 'none';
+                        container.innerHTML = '<div class="no-results">No hay beneficiarios registrados</div>';
                     }
                 } else {
                     showModal('Error', 'No se pudieron cargar los beneficiarios', 'error');
@@ -282,11 +282,15 @@ document.addEventListener('DOMContentLoaded', function () {
         setTimeout(() => editModalBackdrop.style.display = 'none', 300);
     }
     function closeViewModal() { viewModalBackdrop.style.display = 'none'; }
+    function closeLecturasModal() { lecturasModalBackdrop.style.display = 'none'; }
 
     if (editCloseBtn) editCloseBtn.addEventListener('click', closeEditModal);
     if (editCancelBtn) editCancelBtn.addEventListener('click', closeEditModal);
     if (viewCloseBtn) viewCloseBtn.addEventListener('click', closeViewModal);
+    if (lecturasCloseBtn) lecturasCloseBtn.addEventListener('click', closeLecturasModal);
+    if (viewLecturasBtn) viewLecturasBtn.addEventListener('click', (e) => { e.preventDefault(); mostrarModalLecturas(document.getElementById('viewId').textContent); });
     window.addEventListener('click', (e) => { if (e.target === viewModalBackdrop) closeViewModal(); });
+    window.addEventListener('click', (e) => { if (e.target === lecturasModalBackdrop) closeLecturasModal(); });
 
     function mostrarLoading(mostrar) {
         loadingOverlay.style.display = mostrar ? 'flex' : 'none';
@@ -297,10 +301,16 @@ document.addEventListener('DOMContentLoaded', function () {
         const btnEdit = e.target.closest('.btn-edit');
         const btnDelete = e.target.closest('.btn-delete');
         const btnView = e.target.closest('.btn-view');
+        const card = e.target.closest('.beneficiary-card');
 
         if (btnEdit) mostrarModalEdicion(btnEdit.dataset.id);
         else if (btnDelete) confirmarEliminacion(btnDelete.dataset.id);
         else if (btnView) mostrarModalVista(btnView.dataset.id);
+        else if (card && !btnEdit && !btnDelete && !btnView) {
+            // Click on card itself, open lecturas
+            const id = card.closest('.beneficiary-row').dataset.id;
+            mostrarModalLecturas(id);
+        }
     });
 
     // --- View Modal Logic ---
@@ -335,6 +345,226 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     viewModalBackdrop.style.display = 'flex';
                 } else showModal('Error', 'No se pudo cargar la información', 'error');
+            })
+            .catch(() => { mostrarLoading(false); showModal('Error', 'Error de conexión', 'error'); });
+    }
+
+    // --- Lecturas Modal Logic ---
+    function mostrarModalLecturas(id) {
+        // Clear previous data immediately
+        document.getElementById('lecturasNombre').textContent = 'Cargando...';
+        document.getElementById('lecturasMedidor').textContent = '...';
+        document.getElementById('lecturasContainer').innerHTML = '';
+
+        mostrarLoading(true);
+        fetch(`../controladores/lecturas.php?action=get_lecturas_usuario&id_usuario=${id}`)
+            .then(r => r.json())
+            .then(data => {
+                mostrarLoading(false);
+                if (data.success) {
+                    // Set user info from server response
+                    if (data.usuario) {
+                        document.getElementById('lecturasNombre').textContent = data.usuario.nombre;
+                        document.getElementById('lecturasMedidor').textContent = data.usuario.no_medidor;
+                    } else {
+                        // Fallback if user data is missing for some reason
+                        document.getElementById('lecturasNombre').textContent = 'Usuario Desconocido';
+                        document.getElementById('lecturasMedidor').textContent = 'N/A';
+                    }
+
+                    // Populate grouped readings
+                    const container = document.getElementById('lecturasContainer');
+                    container.innerHTML = '';
+                    const lecturasKeys = Object.keys(data.lecturas);
+                    if (lecturasKeys.length === 0) {
+                        container.innerHTML = '<div style="text-align: center; padding: 2rem; color: #64748b;">No hay lecturas registradas</div>';
+                    } else {
+                        lecturasKeys.forEach(mesAnio => {
+                            const mesSection = document.createElement('div');
+                            mesSection.className = 'lecturas-mes-section';
+
+                            const readingsHtml = data.lecturas[mesAnio].map(lectura => {
+                                const estado = lectura.estado_pago || 'Sin Factura';
+                                let statusClass = 'neutral';
+                                let icon = 'fa-file';
+
+                                if (estado === 'Pagado') {
+                                    statusClass = 'paid';
+                                    icon = 'fa-check-circle';
+                                } else if (estado === 'Pendiente') {
+                                    statusClass = 'warning';
+                                    icon = 'fa-clock';
+                                } else if (estado === 'Cancelado') {
+                                    statusClass = 'canceled';
+                                    icon = 'fa-ban';
+                                }
+
+                                let acciones = '';
+
+                                // Botón Pagar - Solo si no está pagado
+                                if (estado !== 'Pagado') {
+                                    acciones += `<button class="card-action-btn btn-pagar" data-id="${lectura.id_lectura}" title="Ir a pagar esta lectura" style="margin-right: 0.5rem; font-size: 0.8rem; padding: 0.4rem 0.8rem;"><i class="fas fa-credit-card"></i> Pagar</button>`;
+                                }
+
+                                // Botón Editar Estado - Siempre disponible
+                                acciones += `<button class="card-action-btn edit-status-btn" data-id="${lectura.id_lectura}" data-estado="${estado}" title="Editar estado de pago" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;"><i class="fas fa-edit"></i> Editar Estado</button>`;
+
+                                return `
+                                    <tr>
+                                        <td>${lectura.fecha_lectura}</td>
+                                        <td>${lectura.lectura_anterior}</td>
+                                        <td>${lectura.lectura_actual}</td>
+                                        <td style="font-weight: bold; color: #000000;">${lectura.consumo_m3} m³</td>
+                                        <td>${lectura.observaciones ? `<span style="color: #ff0000; font-weight: bold; background-color: #87ceeb; padding: 0.25rem 0.5rem; border-radius: 4px;">${lectura.observaciones}</span>` : '<span style="color: #9ca3af; font-style: italic;">Sin observaciones</span>'}</td>
+                                        <td>
+                                            <span class="status-badge ${statusClass}">
+                                                <i class="fas ${icon}"></i> ${estado}
+                                            </span>
+                                        </td>
+                                        <td>${acciones}</td>
+                                    </tr>
+                                `;
+                            }).join('');
+
+                            mesSection.innerHTML = `
+                                <h4 class="lecturas-mes-title"><i class="fas fa-calendar-alt"></i> ${mesAnio}</h4>
+                                <div class="table-responsive">
+                                    <table class="lecturas-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th>L. Anterior</th>
+                                                <th>L. Actual</th>
+                                                <th>Consumo</th>
+                                                <th>Observaciones</th>
+                                                <th>Estado Pago</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${readingsHtml}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            `;
+                            container.appendChild(mesSection);
+                        });
+                    }
+
+                    // Agregar listeners para el botón Pagar
+                    document.querySelectorAll('.btn-pagar').forEach(btn => {
+                        btn.addEventListener('click', function () {
+                            const idLectura = this.dataset.id;
+                            // Redirigir a la sección de facturación con el id_lectura como parámetro
+                            window.location.href = `../vistas/facturacion.php?id_lectura=${idLectura}`;
+                        });
+                    });
+
+                    // Agregar listeners para editar estado
+                    document.querySelectorAll('.edit-status-btn').forEach(btn => {
+                        btn.addEventListener('click', function () {
+                            const idLectura = this.dataset.id;
+                            const estadoActual = this.dataset.estado;
+
+                            // Crear opciones de estado
+                            let opcionesEstado = '';
+                            const estados = ['Pendiente', 'Pagado', 'Cancelado'];
+
+                            estados.forEach(estado => {
+                                if (estado !== estadoActual) {
+                                    let btnClass = 'btn-primary';
+                                    let iconClass = 'fa-clock';
+
+                                    if (estado === 'Pagado') {
+                                        btnClass = 'btn-success';
+                                        iconClass = 'fa-check-circle';
+                                    } else if (estado === 'Cancelado') {
+                                        btnClass = 'btn-warning';
+                                        iconClass = 'fa-ban';
+                                    }
+
+                                    opcionesEstado += `<button class="btn ${btnClass} change-status-btn" data-estado="${estado}" style="margin: 0.5rem;"><i class="fas ${iconClass}"></i> ${estado}</button>`;
+                                }
+                            });
+
+                            // Mostrar modal personalizado
+                            const modalBackdrop = document.getElementById('customModalBackdrop');
+                            const modalIcon = document.getElementById('modalIcon');
+                            const modalTitle = document.getElementById('modalTitle');
+                            const modalMessage = document.getElementById('modalMessage');
+                            const modalActions = document.getElementById('modalActions');
+
+                            modalIcon.className = 'modal-icon warning';
+                            modalIcon.innerHTML = '<i class="fas fa-edit"></i>';
+                            modalTitle.textContent = 'Cambiar Estado de Pago';
+                            modalMessage.innerHTML = `
+                                <p style="margin-bottom: 1rem;">Estado actual: <strong style="color: #2563eb;">${estadoActual}</strong></p>
+                                <p style="margin-bottom: 1rem;">Seleccione el nuevo estado:</p>
+                                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                                    ${opcionesEstado}
+                                </div>
+                            `;
+
+                            // Botón cancelar
+                            const cancelBtn = document.createElement('button');
+                            cancelBtn.className = 'modal-btn btn-cancel';
+                            cancelBtn.innerHTML = '<i class="fas fa-times"></i> Cancelar';
+                            cancelBtn.onclick = () => closeModal();
+
+                            modalActions.innerHTML = '';
+                            modalActions.appendChild(cancelBtn);
+
+                            modalBackdrop.classList.add('show');
+                            modalBackdrop.style.display = 'flex';
+
+                            // Agregar listeners a los botones de cambio de estado
+                            setTimeout(() => {
+                                document.querySelectorAll('.change-status-btn').forEach(changeBtn => {
+                                    changeBtn.addEventListener('click', function () {
+                                        const nuevoEstado = this.dataset.estado;
+
+                                        // Confirmación adicional
+                                        closeModal();
+
+                                        setTimeout(() => {
+                                            showModal(
+                                                'Confirmar Cambio',
+                                                `¿Está seguro de cambiar el estado de <strong>${estadoActual}</strong> a <strong>${nuevoEstado}</strong>?`,
+                                                'warning',
+                                                () => {
+                                                    // Confirmar cambio
+                                                    mostrarLoading(true);
+                                                    fetch(`../controladores/lecturas.php?action=update_estado_pago&id_lectura=${idLectura}&estado=${nuevoEstado}`)
+                                                        .then(r => r.json())
+                                                        .then(data => {
+                                                            mostrarLoading(false);
+                                                            if (data.success) {
+                                                                mostrarAlerta('Éxito', 'Estado de pago actualizado correctamente', 'success');
+                                                                // Recargar modal de lecturas
+                                                                setTimeout(() => mostrarModalLecturas(id), 1500);
+                                                            } else {
+                                                                mostrarAlerta('Error', data.message || 'No se pudo actualizar el estado', 'error');
+                                                            }
+                                                        })
+                                                        .catch(() => {
+                                                            mostrarLoading(false);
+                                                            mostrarAlerta('Error', 'Error de conexión', 'error');
+                                                        });
+                                                },
+                                                () => {
+                                                    // Cancelar - no hacer nada
+                                                }
+                                            );
+                                        }, 300);
+                                    });
+                                });
+                            }, 100);
+                        });
+                    });
+
+                    lecturasModalBackdrop.style.display = 'flex';
+                    setTimeout(() => lecturasModalBackdrop.classList.add('show'), 10);
+                } else showModal('Error', 'No se pudieron cargar las lecturas', 'error');
             })
             .catch(() => { mostrarLoading(false); showModal('Error', 'Error de conexión', 'error'); });
     }
