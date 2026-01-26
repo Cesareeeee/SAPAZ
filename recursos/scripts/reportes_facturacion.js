@@ -243,7 +243,14 @@ document.addEventListener('DOMContentLoaded', function () {
         const content = document.getElementById('historyModalContent');
         const title = document.getElementById('historyModalTitle');
 
-        title.innerHTML = `<i class="fas fa-history"></i> Historial de: <span style="color:#1e40af;">${nombre}</span>`;
+        title.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                <span><i class="fas fa-history"></i> Historial de: <span style="color:#1e40af;">${nombre}</span></span>
+                <button class="btn-pdf-history" onclick="generarReporteHistorialPDF(${id})">
+                    <i class="fas fa-file-pdf"></i> Imprimir
+                </button>
+            </div>
+        `;
         content.innerHTML = '<div style="text-align:center; padding:2rem;"><i class="fas fa-spinner fa-spin fa-2x" style="color:#3b82f6;"></i></div>';
         modal.style.display = 'flex';
 
@@ -251,14 +258,14 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    renderHistory(id, data.history, content);
+                    renderHistory(id, data.history, content, nombre);
                 } else {
                     content.innerHTML = '<p class="text-error" style="text-align:center;">Error al cargar historial</p>';
                 }
             });
     };
 
-    function renderHistory(userId, history, container) {
+    function renderHistory(userId, history, container, userName) {
         if (history.length === 0) {
             container.innerHTML = `
                 <div style="text-align:center; padding:3rem; color:#94a3b8;">
@@ -270,20 +277,36 @@ document.addEventListener('DOMContentLoaded', function () {
 
         let html = '<div class="history-list-container">';
         history.forEach(h => {
-            const date = new Date(h.fecha_lectura).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
-            // Logic for status
+            // Ensure valid date
+            const dateObj = new Date(h.fecha_lectura.replace(/-/g, '/')); // Simple fix for some browsers or just rely on standard string
+            const date = isNaN(dateObj) ? h.fecha_lectura : dateObj.toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+
             let statusBadge = '';
             let actionBtn = '';
 
             if (h.id_factura && h.estado_factura === 'Pagado') {
                 statusBadge = '<span class="status-tag-modal" style="background:#d1fae5; color:#059669;">PAGADO</span>';
-                actionBtn = `<div style="font-size:0.8rem; color:#059669;"><i class="fas fa-check"></i> Folio #${h.id_factura}</div>`;
+                actionBtn = `
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
+                         <div style="font-size:0.8rem; color:#059669;"><i class="fas fa-check"></i> Folio #${h.id_factura}</div>
+                         <button class="btn-history-card" onclick="window.viewTicket(${h.id_factura})" title="Imprimir Ticket">
+                            <i class="fas fa-print"></i> Ticket
+                         </button>
+                    </div>
+                `;
             } else if (h.id_factura) {
                 // Factura existe pero no pagada (Pendiente) -> PAGO DIRECTO
                 statusBadge = '<span class="status-tag-modal" style="background:#ffedd5; color:#c2410c;">PENDIENTE</span>';
-                // Pass full object or needed params
-                const montoTotal = h.monto_total || 0;
-                actionBtn = `<button class="btn-pay-modal" onclick="procesarPagoDirectoDesdeHistorial(${h.id_factura}, '${montoTotal}', '${h.consumo_m3}', '${h.fecha_lectura}', '${userId}')">
+
+                // Prepare details for the shared confirmation modal
+                // We escape 'userName' to avoid SyntaxError in onclick if it contains quotes
+                const safeName = userName.replace(/'/g, "\\'");
+                const total = parseFloat(h.monto_total || 0);
+                const consumo = parseFloat(h.consumo_m3 || 0);
+                // We use global rates if available, otherwise just pass 0 so calculation works (but breakdown might be off if not loaded)
+                // Note: facturacion.js loads rates on start.
+
+                actionBtn = `<button class="btn-pay-modal" onclick="event.stopPropagation(); triggerPaymentFromHistory(${h.id_factura}, '${safeName}', ${consumo}, ${total})">
                     <i class="fas fa-credit-card"></i> Pagar
                  </button>`;
             } else {
@@ -305,6 +328,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div>
                             <div class="history-date">${date}</div>
                             <div class="history-meta">Consumo: <strong>${h.consumo_m3} m³</strong></div>
+                            ${h.id_factura ? `<div class="history-meta" style="font-size:0.75rem; color:#64748b;"><i class="fas fa-user-edit"></i> Atendido por: <strong>${h.id_usuario_registro || 'Sistema'}</strong></div>` : ''}
                             <div class="history-meta" style="margin-top:0.2rem;">${statusBadge}</div>
                         </div>
                     </div>
@@ -319,7 +343,31 @@ document.addEventListener('DOMContentLoaded', function () {
         container.innerHTML = html;
     }
 
+    // Helper to trigger properly
+    window.triggerPaymentFromHistory = function (idFactura, nombre, consumo, total) {
+        // Ensure rates are set. If undefined, default to standard.
+        const tarifa = window.currentRate || 10.00;
+
+        if (typeof window.mostrarConfirmacionPago === 'function') {
+            window.mostrarConfirmacionPago(idFactura, {
+                nombre: nombre,
+                consumo: consumo,
+                tarifa: tarifa,
+                total: total
+            });
+        } else {
+            console.error("mostrarConfirmacionPago not found");
+        }
+    };
+
     // --- Window Actions ---
+
+    window.generarReporteHistorialPDF = function (userId) {
+        if (!userId) return;
+        const url = `../controladores/reporte_historial_pdf.php?id_usuario=${userId}`;
+        // Open in new window/tab for printing
+        window.open(url, '_blank', 'noopener,noreferrer');
+    };
 
     // Case A: No Invoice -> Go to Generator Tab
     window.irAGenerarFactura = function (userId, readingId) {
@@ -482,5 +530,22 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    // Listen for invoice Payment to refresh history
+    document.addEventListener('invoicePaid', function (e) {
+        const userId = e.detail.id_usuario;
+        const modal = document.getElementById('historyModal');
+
+        if (modal && modal.style.display !== 'none') {
+            const titleSpan = document.getElementById('historyModalTitle').querySelector('span');
+            const name = titleSpan ? titleSpan.textContent : '';
+            if (name && userId) {
+                verHistorialUsuario(userId, name);
+            }
+        }
+
+        // Also refresh list if needed
+        loadBeneficiaries(false);
+    });
 
 });

@@ -112,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $id_usuario = intval($_GET['id_usuario']);
 
         $sql = "SELECT l.id_lectura, l.fecha_lectura, l.consumo_m3, l.lectura_actual, 
-                f.id_factura, f.monto_total, f.estado as estado_factura, f.fecha_emision
+                f.id_factura, f.monto_total, f.estado as estado_factura, f.fecha_emision, f.id_usuario_registro
                 FROM lecturas l
                 LEFT JOIN facturas f ON l.id_lectura = f.id_lectura
                 WHERE l.id_usuario = ?

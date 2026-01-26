@@ -11,8 +11,10 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(data => {
             if (data.success) {
                 currentRate = parseFloat(data.rate);
+                window.currentRate = currentRate; // Expose global
                 // Check if rate_excess is defined, otherwise default to 15, but allow 0
                 currentRateExcess = (data.rate_excess !== undefined && data.rate_excess !== null) ? parseFloat(data.rate_excess) : 15.00;
+                window.currentRateExcess = currentRateExcess; // Expose global
                 previousRate = currentRate;
                 previousRateExcess = currentRateExcess;
                 document.getElementById('rateDisplay').textContent = `$${currentRate.toFixed(2)}`;
@@ -222,20 +224,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('btnGenerate').disabled = true;
     }
 
-    // --- Cross-Module Payment Initiation ---
-    document.addEventListener('initiatePayment', function (e) {
-        const { userId, readingId } = e.detail;
-        console.log("Payment Requested for:", userId, readingId);
 
-        // Fetch User Details to Select
-        fetch(`../controladores/facturacion.php?action=get_user_details&id=${userId}`)
-            .then(r => r.json())
-            .then(data => {
-                if (data.success && data.user) {
-                    selectUser(data.user, readingId);
-                }
-            });
-    });
 
     function selectUser(user, autoSelectReadingId = null) {
         selectedUser = user;
@@ -272,6 +261,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     mostrarLecturasPendientes(pendingReadings, preSelectedId);
                 } else {
                     listContainer.innerHTML = '<p style="text-align:center; color:#6b7280; margin-top:0.5rem;">No hay lecturas pendientes por cobrar.</p>';
+                    mostrarNotificacion('Sin Adeudos', 'Este usuario se encuentra al corriente en sus pagos.', 'success');
                 }
             })
             .catch(e => {
@@ -421,6 +411,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 `La lectura actual (<strong>${lecturaActual}</strong>) es menor que la anterior (<strong>${lecturaAnterior}</strong>).<br><br>Esto puede indicar un error de captura o un reinicio del medidor.`
             );
         }
+
+        // Desplazar suavemente hacia los detalles de la lectura para generar factura
+        setTimeout(() => {
+            const container = document.getElementById('selectedReadingSection');
+            if (container && container.style.display !== 'none') {
+                container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 150);
     }
 
     function calculateTotal(m3) {
@@ -769,6 +767,13 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(data => {
                 if (data.success) {
                     mostrarNotificacion('Pago Exitoso', 'El pago ha sido registrado correctamente.', 'success');
+                    // Notify other modules (e.g., reports)
+                    document.dispatchEvent(new CustomEvent('invoicePaid', {
+                        detail: {
+                            id_factura: id,
+                            id_usuario: selectedUser ? selectedUser.id_usuario : null
+                        }
+                    }));
                     loadInvoices(selectedUser ? selectedUser.id_usuario : null);
 
                     setTimeout(() => {
@@ -789,16 +794,39 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     window.viewTicket = function (idFactura) {
-        const invoice = allInvoices.find(i => i.id_factura == idFactura);
-        if (!invoice) {
-            mostrarNotificacion('Error', 'No se encontraron datos de la factura', 'error');
-            return;
-        }
+        // Try to find in local list first
+        let invoice = allInvoices.find(i => i.id_factura == idFactura);
 
+        if (invoice) {
+            renderTicketModal(invoice);
+        } else {
+            // Fetch from server if not found locally (e.g. from reports tab)
+            const loader = document.getElementById('searchLoader');
+            if (loader) loader.style.display = 'block';
+
+            fetch(`../controladores/facturacion.php?action=get_single_invoice&id_factura=${idFactura}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (loader) loader.style.display = 'none';
+                    if (data.success && data.invoice) {
+                        renderTicketModal(data.invoice);
+                    } else {
+                        mostrarNotificacion('Error', 'No se encontraron datos de la factura', 'error');
+                    }
+                })
+                .catch(err => {
+                    if (loader) loader.style.display = 'none';
+                    console.error(err);
+                    mostrarNotificacion('Error', 'Error al cargar ticket', 'error');
+                });
+        }
+    };
+
+    function renderTicketModal(invoice) {
         const modal = document.getElementById('ticketModal');
         const preview = document.getElementById('ticketPreviewArea');
-        const fecha = new Date(invoice.fecha_emision).toLocaleDateString();
-        const hora = new Date(invoice.fecha_emision).toLocaleTimeString();
+        const fecha = new Date(invoice.fecha_emision).toLocaleDateString('es-MX');
+        const hora = new Date(invoice.fecha_emision).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
 
         // Recalcular desglose para el ticket (usando tarifas actuales como referencia, 
         // idealmente esto se debería guardar en BD al momento de facturar)
@@ -849,7 +877,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="ticket-info">
                     <div class="ticket-row"><span>Folio:</span> <span>#${invoice.id_factura}</span></div>
                     <div class="ticket-row"><span>Fecha:</span> <span>${fecha} ${hora}</span></div>
-                    <div class="ticket-row"><span>Cajero:</span> <span>Admin</span></div>
+                    <div class="ticket-row"><span>Cajero:</span> <span>${invoice.id_usuario_registro || 'Sistema'}</span></div>
                 </div>
                 
                 <div class="ticket-divider"></div>
@@ -1015,9 +1043,33 @@ document.addEventListener('DOMContentLoaded', function () {
     // If PHP doesn't support `get_single_invoice`, we might need to add it or hack it.
     // For now, let's assume valid ID returns data.
 
+    function mostrarAlertaCritica(titulo, mensaje) {
+        const notifAnterior = document.querySelector('.notificacion-modal');
+        if (notifAnterior) notifAnterior.remove();
+        const modal = document.createElement('div');
+        modal.className = 'notificacion-modal';
+        modal.innerHTML = `
+            <div class="notificacion-overlay"></div>
+            <div class="notificacion-contenido notif-error alerta-critica-contenido">
+                <div class="notificacion-icono"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="notificacion-texto">
+                    <h3 class="notificacion-titulo alerta-critica-titulo">${titulo}</h3>
+                    <div class="notificacion-mensaje alerta-critica-mensaje">${mensaje}</div>
+                </div>
+                <button class="notificacion-cerrar"><i class="fas fa-times"></i></button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        setTimeout(() => modal.classList.add('show'), 10);
+        const cerrar = () => { modal.classList.remove('show'); setTimeout(() => modal.remove(), 300); };
+        modal.querySelector('.notificacion-cerrar').addEventListener('click', cerrar);
+        modal.querySelector('.notificacion-overlay').addEventListener('click', cerrar);
+    }
+
     // Expose notifications globally for reports
     window.mostrarNotificacion = mostrarNotificacion;
     window.mostrarConfirmacion = mostrarConfirmacion;
+    window.mostrarAlertaCritica = mostrarAlertaCritica;
 
     document.addEventListener('initiatePayment', function (e) {
         const userId = e.detail.userId;

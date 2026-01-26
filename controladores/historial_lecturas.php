@@ -93,10 +93,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
 
         // Obtener lecturas
         $sql = "SELECT l.id_lectura, l.fecha_lectura, l.lectura_anterior, l.lectura_actual, l.consumo_m3, l.observaciones, l.created_at,
-                        us.nombre, us.no_medidor, d.calle, d.barrio
+                        us.nombre, us.no_medidor, d.calle, d.barrio,
+                        uss.nombre AS registrado_por, uss.rol AS rol_registro
                  FROM lecturas l
                  JOIN usuarios_servicio us ON l.id_usuario = us.id_usuario
                  JOIN domicilios d ON us.id_domicilio = d.id_domicilio
+                 LEFT JOIN usuarios_sistema uss ON l.id_usuario_sistema = uss.id_usuario_sistema
                  $where_sql
                  ORDER BY l.created_at $orden
                  LIMIT ? OFFSET ?";
@@ -172,10 +174,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
         }
 
         $sql = "SELECT l.id_lectura, l.fecha_lectura, l.lectura_anterior, l.lectura_actual, l.consumo_m3, l.observaciones, l.created_at,
-                       us.nombre, us.no_medidor, d.calle, d.barrio
+                       us.nombre, us.no_medidor, d.calle, d.barrio,
+                       uss.nombre AS registrado_por, uss.rol AS rol_registro
                 FROM lecturas l
                 JOIN usuarios_servicio us ON l.id_usuario = us.id_usuario
                 JOIN domicilios d ON us.id_domicilio = d.id_domicilio
+                LEFT JOIN usuarios_sistema uss ON l.id_usuario_sistema = uss.id_usuario_sistema
                 WHERE l.id_lectura = ?";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param('i', $id_lectura);

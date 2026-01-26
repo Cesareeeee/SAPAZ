@@ -186,3 +186,88 @@ if (fechaLectura) {
     const hoy = new Date().toISOString().split('T')[0];
     fechaLectura.value = hoy;
 }
+
+// Cerrar Sesión con Modal Profesional
+const btnCerrarSesion = document.getElementById('btnCerrarSesion');
+if (btnCerrarSesion) {
+    btnCerrarSesion.addEventListener('click', (e) => {
+        e.preventDefault();
+
+        // Crear modal personalizado
+        const modalHTML = `
+            <div class="logout-modal-overlay" id="logoutModalOverlay">
+                <div class="logout-modal">
+                    <div class="logout-modal-header">
+                        <div class="logout-modal-icon">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </div>
+                        <div class="logout-modal-content">
+                            <h3 class="logout-modal-title">Cerrar Sesión</h3>
+                            <p class="logout-modal-message">¿Está seguro que desea cerrar sesión?</p>
+                        </div>
+                    </div>
+                    <div class="logout-modal-actions">
+                        <button class="logout-btn logout-btn-cancel" id="logoutCancelBtn">
+                            <i class="fas fa-times"></i>
+                            Cancelar
+                        </button>
+                        <button class="logout-btn logout-btn-confirm" id="logoutConfirmBtn">
+                            <i class="fas fa-check"></i>
+                            Sí, Cerrar Sesión
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Agregar modal al body
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+        const overlay = document.getElementById('logoutModalOverlay');
+        const cancelBtn = document.getElementById('logoutCancelBtn');
+        const confirmBtn = document.getElementById('logoutConfirmBtn');
+
+        // Mostrar modal con animación
+        setTimeout(() => overlay.classList.add('active'), 10);
+
+        // Cancelar
+        const closeModal = () => {
+            overlay.classList.remove('active');
+            setTimeout(() => overlay.remove(), 300);
+        };
+
+        cancelBtn.addEventListener('click', closeModal);
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) closeModal();
+        });
+
+        // Confirmar logout
+        confirmBtn.addEventListener('click', async () => {
+            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cerrando...';
+            confirmBtn.disabled = true;
+
+            try {
+                const response = await fetch('../controladores/logout.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Redirigir al login
+                    window.location.href = 'login.php';
+                } else {
+                    alert('Error al cerrar sesión. Por favor intente nuevamente.');
+                    closeModal();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error de conexión al cerrar sesión.');
+                closeModal();
+            }
+        });
+    });
+}

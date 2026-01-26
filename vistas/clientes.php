@@ -1,4 +1,5 @@
 <?php
+require_once '../includes/validar_sesion.php';
 require_once '../controladores/beneficiarios.php';
 ?>
 <!DOCTYPE html>
@@ -7,9 +8,10 @@ require_once '../controladores/beneficiarios.php';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SAPAZ - Beneficiarios</title>
+    <link rel="icon" href="../recursos/imagenes/SAPAZ.jpeg" type="image/jpeg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../recursos/estilos/panel_admin.css?v=1.3332345223333333335">
-    <link rel="stylesheet" href="../recursos/estilos/clientes.css?v=34223483">
+    <link rel="stylesheet" href="../recursos/estilos/panel_admin.css?v=2.002">
+    <link rel="stylesheet" href="../recursos/estilos/clientes.css?v=342222223483">
 </head>
 <body>
    
@@ -308,7 +310,7 @@ require_once '../controladores/beneficiarios.php';
         </div>
     </div>
 
-    <script src="../recursos/scripts/panel_admin.js?v=1.3332420"></script>
+    <script src="../recursos/scripts/panel_admin.js?v=2.002"></script>
     <script src="../recursos/scripts/validacion_beneficiarios.js?v=3464"></script>
 </body>
 </html>

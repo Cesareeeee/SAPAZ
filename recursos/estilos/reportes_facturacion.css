@@ -622,3 +622,27 @@
         font-size: 0.85rem;
     }
 }
+
+.btn-pdf-history {
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
+    margin-right: 1.5rem;
+    /* Space from Close Button */
+}
+
+.btn-pdf-history:hover {
+    background-color: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 10px -1px rgba(239, 68, 68, 0.4);
+}

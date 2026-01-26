@@ -87,80 +87,129 @@ header {
 
 /* Sidebar Styles */
 .sidebar {
-    width: 250px;
-    background-color: var(--white);
+    width: 260px;
+    background: linear-gradient(180deg, #1F4E79 0%, #0f2c44 100%);
     height: calc(100vh - 70px);
     position: fixed;
     left: 0;
     top: 70px;
-    box-shadow: var(--shadow);
-    transition: transform 0.3s ease;
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
     z-index: 50;
     overflow-y: auto;
+    padding-top: 1.5rem;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Ocultar scrollbar del sidebar pero mantener funcionalidad */
+/* Hide scrollbar */
 .sidebar::-webkit-scrollbar {
     display: none;
 }
 
 .sidebar {
     -ms-overflow-style: none;
-    /* IE and Edge */
     scrollbar-width: none;
-    /* Firefox */
 }
 
 .sidebar ul {
     list-style: none;
-    padding: 1.5rem 0;
+    padding: 0 1rem 1rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-height: calc(100vh - 140px);
 }
 
 .sidebar li {
-    margin-bottom: 0.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 0.5rem 0;
-    background-color: rgba(255, 255, 255, 0.05);
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+}
+
+/* Logout button positioning */
+.sidebar li:last-child {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#btnCerrarSesion {
+    color: #ff6b6b !important;
+}
+
+#btnCerrarSesion:hover {
+    background-color: rgba(255, 107, 107, 0.1) !important;
+    color: #ff4757 !important;
 }
 
 .sidebar a {
     display: flex;
     align-items: center;
-    padding: 0.8rem 1.5rem;
-    color: var(--text-color);
+    padding: 1rem 1.25rem;
+    color: rgba(255, 255, 255, 0.75);
     text-decoration: none;
     transition: all 0.3s ease;
     position: relative;
+    border-radius: 12px;
+    font-weight: 500;
+    font-size: 0.95rem;
+    letter-spacing: 0.3px;
 }
 
 .sidebar a:hover {
-    background-color: rgba(79, 163, 209, 0.1);
-    color: var(--primary-color);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    transform: translateX(4px);
 }
 
 .sidebar a.active {
-    background-color: rgba(79, 163, 209, 0.15);
-    color: var(--primary-color);
+    background: linear-gradient(135deg, #7FD1C9 0%, #4FA3D1 100%);
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(79, 163, 209, 0.3);
 }
 
+/* Remove old indicator */
 .sidebar a.active::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 100%;
-    width: 4px;
-    background-color: var(--secondary-color);
+    display: none;
 }
 
+/* Icon Styles */
 .sidebar i {
     margin-right: 1rem;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
+    width: 24px;
+    /* Fixed width for alignment */
+    text-align: center;
+    transition: all 0.3s ease;
+    opacity: 0.9;
+}
+
+.sidebar a:hover i {
+    transform: scale(1.1);
+    opacity: 1;
+    color: var(--accent-color);
+}
+
+.sidebar a.active i {
+    color: #ffffff;
+    opacity: 1;
+}
+
+/* Section Title (Optional, if used in future) */
+.sidebar-section-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.4);
+    margin: 1.5rem 1rem 0.5rem;
+    font-weight: 700;
+    letter-spacing: 1px;
 }
 
 /* Main Content */
 .main-content {
-    margin-left: 250px;
+    margin-left: 260px;
     padding: 2rem;
     padding-top: 90px;
     flex: 1;
@@ -875,5 +924,139 @@ tr:hover {
     .custom-alert-content .btn+.btn {
         margin-top: 0.5rem;
         margin-left: 0 !important;
+    }
+}
+
+/* Professional Logout Confirmation Modal */
+.logout-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.3s ease;
+}
+
+.logout-modal-overlay.active {
+    display: flex;
+}
+
+.logout-modal {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 440px;
+    width: 90%;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    animation: slideUp 0.3s ease;
+    position: relative;
+}
+
+.logout-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.logout-modal-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.8rem;
+    box-shadow: 0 10px 20px rgba(255, 107, 107, 0.3);
+}
+
+.logout-modal-content {
+    flex: 1;
+}
+
+.logout-modal-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 0.5rem 0;
+}
+
+.logout-modal-message {
+    font-size: 1rem;
+    color: #6b7280;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.logout-modal-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.logout-btn {
+    flex: 1;
+    padding: 0.875rem 1.5rem;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.logout-btn-cancel {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.logout-btn-cancel:hover {
+    background: #e5e7eb;
+    color: #374151;
+    transform: translateY(-2px);
+}
+
+.logout-btn-confirm {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+}
+
+.logout-btn-confirm:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(255, 107, 107, 0.5);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }

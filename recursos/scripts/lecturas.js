@@ -94,11 +94,11 @@ document.addEventListener('DOMContentLoaded', function () {
         modalBackdrop.classList.add('show');
         modalBackdrop.style.display = 'flex';
 
-        // Auto-cerrar después de 60 segundos solo para error
-        if (type === 'error') {
+        // Auto-cerrar después de 7 segundos para success y error (tiempo visible real)
+        if (type === 'success' || type === 'error') {
             setTimeout(() => {
                 closeModal();
-            }, 60000);
+            }, 7000);
         }
     }
 
@@ -493,7 +493,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Función para detectar si es dispositivo móvil
     function isMobileDevice() {
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-               window.innerWidth <= 768;
+            window.innerWidth <= 768;
     }
 
     // Mostrar botón de cámara (disponible en todos los dispositivos con cámara)
@@ -524,7 +524,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let filtrosBenef = { tipo: '', valor: '' };
 
     // Toggle sección de beneficiarios
-    toggleBeneficiariosSection.addEventListener('click', function() {
+    toggleBeneficiariosSection.addEventListener('click', function () {
         if (beneficiariosSection.style.display === 'none') {
             beneficiariosSection.style.display = 'block';
             this.innerHTML = '<i class="fas fa-times"></i> Ocultar Lista';
@@ -542,7 +542,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Evento cambio de tipo
-    filtroTipoBenef.addEventListener('change', function() {
+    filtroTipoBenef.addEventListener('change', function () {
         const tipo = this.value;
         filtroValorBenef.disabled = tipo === '';
         filtroValorBenef.innerHTML = '<option value="">Seleccione...</option>';
@@ -583,14 +583,14 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Evento cambio de valor
-    filtroValorBenef.addEventListener('change', function() {
+    filtroValorBenef.addEventListener('change', function () {
         filtrosBenef.valor = this.value;
         paginaActualBenef = 1;
         cargarBeneficiarios();
     });
 
     // Limpiar filtros
-    btnLimpiarFiltrosBenef.addEventListener('click', function() {
+    btnLimpiarFiltrosBenef.addEventListener('click', function () {
         filtroTipoBenef.value = '';
         filtroValorBenef.value = '';
         filtroValorBenef.disabled = true;
@@ -602,14 +602,14 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Navegación
-    btnPrevBenef.addEventListener('click', function() {
+    btnPrevBenef.addEventListener('click', function () {
         if (paginaActualBenef > 1) {
             paginaActualBenef--;
             cargarBeneficiarios();
         }
     });
 
-    btnNextBenef.addEventListener('click', function() {
+    btnNextBenef.addEventListener('click', function () {
         if (paginaActualBenef < totalPaginasBenef) {
             paginaActualBenef++;
             cargarBeneficiarios();
@@ -683,7 +683,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Agregar eventos a las cards
         document.querySelectorAll('.beneficiario-card').forEach(card => {
-            card.addEventListener('click', function() {
+            card.addEventListener('click', function () {
                 selectUser(this.dataset.id, this.dataset.nombre, this.dataset.medidor, this.dataset.calle + (this.dataset.barrio ? ', ' + this.dataset.barrio : ''));
                 // Ocultar sección de beneficiarios y mostrar formulario
                 beneficiariosSection.style.display = 'none';
@@ -712,13 +712,13 @@ document.addEventListener('DOMContentLoaded', function () {
         fileInput.capture = 'environment'; // Para móviles, usar cámara trasera
         fileInput.style.display = 'none';
 
-        fileInput.addEventListener('change', function(event) {
+        fileInput.addEventListener('change', function (event) {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = function (e) {
                     const img = new Image();
-                    img.onload = function() {
+                    img.onload = function () {
                         // Crear canvas para procesar
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
@@ -771,7 +771,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const closeBtn = processingModal.querySelector('#processingCloseBtn');
         const statusDiv = processingModal.querySelector('#processingStatus');
 
-        closeBtn.addEventListener('click', function() {
+        closeBtn.addEventListener('click', function () {
             if (processingModal.parentNode) {
                 processingModal.parentNode.removeChild(processingModal);
             }

@@ -432,7 +432,26 @@ body {
     margin-top: 0.5rem;
     padding: 0.5rem;
     max-height: 400px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
 }
+
+.pending-readings-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.pending-readings-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.pending-readings-list::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 20px;
+    border: 3px solid transparent;
+}
+
+
 
 .pending-reading-item {
     background: white;
@@ -609,14 +628,14 @@ body {
 .invoice-form {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 0.5rem;
     flex: 1;
 }
 
 .form-group {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.1rem;
 }
 
 .form-label {
@@ -628,12 +647,12 @@ body {
 }
 
 .form-value {
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
     color: var(--text-primary);
-    padding: 0.75rem;
+    padding: 0.4rem 0.6rem;
     background: #f8fafc;
-    border-radius: 8px;
+    border-radius: 6px;
     border: 1px solid var(--border-color);
 }
 
@@ -1005,6 +1024,10 @@ body {
     justify-content: center;
 }
 
+#ticketModal {
+    z-index: 10020 !important;
+}
+
 .ticket-modal-overlay {
     position: absolute;
     top: 0;
@@ -1039,6 +1062,8 @@ body {
     margin: 0;
     font-size: 1.1rem;
     color: var(--text-primary);
+    flex: 1;
+    /* Occupy remaining space */
 }
 
 .btn-close-ticket {
@@ -1420,7 +1445,7 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 10000;
+    z-index: 10010;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1543,7 +1568,7 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 10000;
+    z-index: 10010;
     display: flex;
     align-items: center;
     justify-content: center;

@@ -8,7 +8,7 @@
         <span class="full-name">SISTEMA DE AGUA POTABLE Y ALCANTARILLADO DE ZECALACOAYAN</span>
     </div>
     <div class="user-info">
-        <span>Administrador</span>
+        <span><?php echo isset($_SESSION['nombre_completo']) ? $_SESSION['nombre_completo'] : 'Usuario'; ?></span>
         <img src="../recursos/imagenes/SAPAZ.jpeg" alt="Usuario">
     </div>
 </header>
@@ -55,6 +55,12 @@
             <a href="configuracion.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'configuracion.php' ? 'active' : ''; ?>">
                 <i class="fas fa-cog"></i>
                 <span>Configuración</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" id="btnCerrarSesion">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Cerrar Sesión</span>
             </a>
         </li>
     </ul>

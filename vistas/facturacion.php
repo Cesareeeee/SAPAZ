@@ -1,14 +1,16 @@
+<?php require_once '../includes/validar_sesion.php'; ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SAPAZ - Facturación Premium</title>
+    <link rel="icon" href="../recursos/imagenes/SAPAZ.jpeg" type="image/jpeg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../recursos/estilos/panel_admin.css?v=14.3320">
-    <link rel="stylesheet" href="../recursos/estilos/facturacion.css?v=4.327">
-    <link rel="stylesheet" href="../recursos/estilos/reportes_facturacion.css?v=1.207">
+    <link rel="stylesheet" href="../recursos/estilos/panel_admin.css?v=2.002">
+    <link rel="stylesheet" href="../recursos/estilos/facturacion.css?v=4.40127">
+    <link rel="stylesheet" href="../recursos/estilos/reportes_facturacion.css?v=1.20227">
 </head>
 <body>
   
@@ -324,7 +326,7 @@
     </div>
 
     <script src="../recursos/scripts/panel_admin.js"></script>
-    <script src="../recursos/scripts/facturacion.js?v=4.425"></script>
-    <script src="../recursos/scripts/reportes_facturacion.js?v=1.025"></script>
+    <script src="../recursos/scripts/facturacion.js?v=4.6100"></script>
+    <script src="../recursos/scripts/reportes_facturacion.js?v=1.3100"></script>
 </body>
 </html>

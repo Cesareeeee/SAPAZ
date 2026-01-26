@@ -1,4 +1,4 @@
-// historial_lecturas.js - v1.0900
+// historial_lecturas.js - v2.05000
 
 document.addEventListener('DOMContentLoaded', function () {
     const historialContainer = document.getElementById('historialContainer');
@@ -504,6 +504,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     viewObservaciones.textContent = lectura.observaciones || 'Sin observaciones';
                     viewAgregado.textContent = new Date(lectura.created_at).toLocaleString('es-ES');
 
+                    // Mostrar el nombre del usuario que registró la lectura
+                    viewRegistradoPor.textContent = lectura.registrado_por || 'No disponible';
+
                     pausarAutoRefresh();
                     viewModalBackdrop.style.display = 'flex';
                 } else {
@@ -597,11 +600,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (onConfirm) onConfirm();
             };
             modalActions.appendChild(okBtn);
-            }
-    
-            pausarAutoRefresh();
-            modalBackdrop.classList.add('show');
-            modalBackdrop.style.display = 'flex';
+        }
+
+        pausarAutoRefresh();
+        modalBackdrop.classList.add('show');
+        modalBackdrop.style.display = 'flex';
 
         if (type === 'success' || type === 'error') {
             setTimeout(() => {

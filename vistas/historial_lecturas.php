@@ -1,3 +1,4 @@
+<?php require_once '../includes/validar_sesion.php'; ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -6,8 +7,8 @@
     <title>SAPAZ - Historial de Lecturas</title>
     <link rel="icon" href="../recursos/imagenes/SAPAZ.jpeg" type="image/jpeg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../recursos/estilos/panel_admin.css?v=1.03312442434">
-    <link rel="stylesheet" href="../recursos/estilos/historial_lecturas.css?v=1.01324439007">
+    <link rel="stylesheet" href="../recursos/estilos/panel_admin.css?v=2.002">
+    <link rel="stylesheet" href="../recursos/estilos/historial_lecturas.css?v=2.01000">
 </head>
 <body>
     <!-- Header and Sidebar -->
@@ -300,7 +301,7 @@
         </div>
     </div>
 
-    <script src="../recursos/scripts/panel_admin.js?v=12.03439244103"></script>
-    <script src="../recursos/scripts/historial_lecturas.js?v=2.04910443234"></script>
+    <script src="../recursos/scripts/panel_admin.js?v=2.002"></script>
+    <script src="../recursos/scripts/historial_lecturas.js?v=2.05000"></script>
 </body>
 </html>

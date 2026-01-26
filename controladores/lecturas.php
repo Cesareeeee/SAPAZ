@@ -1,4 +1,5 @@
 <?php
+session_start(); // Iniciar sesión para acceder a datos del usuario logueado
 require_once '../includes/conexion.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
@@ -236,7 +237,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $lectura_actual = trim($_POST['lectura_actual'] ?? '');
     $fecha_lectura = $_POST['fecha_lectura'] ?? '';
     $observaciones = trim($_POST['observaciones'] ?? '');
-    $id_usuario_sistema = 1; // Asumiendo admin por defecto
+    $id_usuario_sistema = $_SESSION['user_id'] ?? 1; // Usuario que registra la lectura (de la sesión iniciada)
 
     if (empty($id_usuario) || empty($lectura_actual) || empty($fecha_lectura)) {
         echo json_encode(['success' => false, 'message' => 'Campos requeridos']);

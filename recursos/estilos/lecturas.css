@@ -55,7 +55,8 @@
     border-bottom: none;
 }
 
-.result-item:hover, .result-item.selected {
+.result-item:hover,
+.result-item.selected {
     background: linear-gradient(135deg, rgba(79, 163, 209, 0.2) 0%, rgba(135, 206, 235, 0.3) 100%);
     transform: translateY(-3px) scale(1.02);
     box-shadow: 0 8px 20px rgba(79, 163, 209, 0.25);
@@ -63,7 +64,8 @@
 }
 
 .result-item::before {
-    content: '\f007'; /* FontAwesome user icon */
+    content: '\f007';
+    /* FontAwesome user icon */
     font-family: 'Font Awesome 6 Free';
     font-weight: 900;
     color: var(--primary-color);
@@ -461,7 +463,7 @@ textarea.form-control {
     }
 }
 
-/* Custom Modal Styles */
+/* Custom Modal Styles - Diseño idéntico al historial de lecturas */
 .custom-modal-backdrop {
     display: none;
     position: fixed;
@@ -500,132 +502,6 @@ textarea.form-control {
     transform: scale(1);
 }
 
-/* Estilos para el botón de cámara */
-.btn-camera {
-    background: #28a745;
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    font-size: 0.9rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    margin-top: 0.5rem;
-    width: 100%;
-}
-
-.btn-camera:hover {
-    background: #218838;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-}
-
-.btn-camera i {
-    font-size: 1rem;
-}
-
-/* Estilos para el modal de cámara */
-.camera-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
-    z-index: 10000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.camera-modal-content {
-    background: white;
-    border-radius: 15px;
-    width: 90%;
-    max-width: 500px;
-    max-height: 90vh;
-    overflow: hidden;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-}
-
-.camera-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 1.5rem;
-    background: var(--primary-color);
-    color: white;
-}
-
-.camera-modal-header h3 {
-    margin: 0;
-    font-size: 1.2rem;
-}
-
-.camera-close-btn {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 50%;
-    transition: background 0.3s;
-}
-
-.camera-close-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-}
-
-.camera-modal-body {
-    padding: 1rem;
-    text-align: center;
-}
-
-#cameraVideo {
-    width: 100%;
-    max-width: 100%;
-    border-radius: 10px;
-    margin-bottom: 1rem;
-}
-
-#cameraCanvas {
-    width: 100%;
-    max-width: 100%;
-    border-radius: 10px;
-    margin-bottom: 1rem;
-}
-
-.camera-controls {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    margin-bottom: 1rem;
-}
-
-.camera-status {
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    min-height: 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.processing-preview {
-    text-align: center;
-    margin-bottom: 1rem;
-}
-
-.processing-preview img {
-    border: 2px solid var(--primary-color);
-}
-
 .modal-icon {
     font-size: 4.5rem;
     margin-bottom: 1.5rem;
@@ -642,17 +518,17 @@ textarea.form-control {
 }
 
 .modal-icon.warning {
-    color: #ff6b35; /* Orange/Red */
+    color: #ff6b35;
     background: rgba(255, 107, 53, 0.1);
 }
 
 .modal-icon.success {
-    color: #22c55e; /* Green */
+    color: #22c55e;
     background: rgba(34, 197, 94, 0.1);
 }
 
 .modal-icon.error {
-    color: #ef4444; /* Red */
+    color: #ef4444;
     background: rgba(239, 68, 68, 0.1);
 }
 
@@ -660,7 +536,7 @@ textarea.form-control {
     font-size: 1.8rem;
     font-weight: 800;
     margin-bottom: 1rem;
-    color: var(--text-color, #333);
+    color: #333;
 }
 
 .modal-message {
@@ -690,7 +566,7 @@ textarea.form-control {
 }
 
 .btn-confirm {
-    background: var(--primary-color, #4facfe);
+    background: #4facfe;
     color: white;
     box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
 }

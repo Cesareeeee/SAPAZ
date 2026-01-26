@@ -1,3 +1,4 @@
+<?php require_once '../includes/validar_sesion.php'; ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -6,8 +7,8 @@
     <title>SAPAZ - Lecturas</title>
     <link rel="icon" href="../recursos/imagenes/SAPAZ.jpeg" type="image/jpeg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../recursos/estilos/panel_admin.css?v=1.1">
-    <link rel="stylesheet" href="../recursos/estilos/lecturas.css?v=<?php echo time(); ?>1">
+    <link rel="stylesheet" href="../recursos/estilos/panel_admin.css?v=2.002">
+    <link rel="stylesheet" href="../recursos/estilos/lecturas.css?v=3.50000">
 </head>
 <body>
     <!-- Header and Sidebar -->
@@ -173,8 +174,8 @@
         </div>
     </div>
 
-    <script src="../recursos/scripts/panel_admin.js?v=1.1"></script>
+    <script src="../recursos/scripts/panel_admin.js?v=2.002"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-    <script src="../recursos/scripts/lecturas.js?v=232239"></script>
+    <script src="../recursos/scripts/lecturas.js?v=350000"></script>
 </body>
 </html>
