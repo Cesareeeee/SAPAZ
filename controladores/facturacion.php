@@ -40,12 +40,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $action = $_GET['action'] ?? '';
 
     if ($action === 'get_rate') {
-        $res = $conn->query("SELECT valor FROM configuracion WHERE clave = 'tarifa_m3'");
+        $res = $conn->query("SELECT clave, valor FROM configuracion WHERE clave IN ('tarifa_m3', 'tarifa_excedente')");
         $rate = 10.00;
-        if ($row = $res->fetch_assoc()) {
-            $rate = floatval($row['valor']);
+        $rateExcess = 15.00; // Default excess rate
+        
+        while ($row = $res->fetch_assoc()) {
+            if ($row['clave'] === 'tarifa_m3') $rate = floatval($row['valor']);
+            if ($row['clave'] === 'tarifa_excedente') $rateExcess = floatval($row['valor']);
         }
-        echo json_encode(['success' => true, 'rate' => $rate]);
+        
+        echo json_encode([
+            'success' => true, 
+            'rate' => $rate,
+            'rate_excess' => $rateExcess
+        ]);
         exit;
     }
 
@@ -126,6 +134,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     }
 
+    if ($action === 'get_single_invoice') {
+        $id_factura = intval($_GET['id_factura']);
+        // Join with usuarios to get details
+        $sql = "SELECT f.*, us.nombre, us.no_contrato, us.no_medidor, l.consumo_m3, l.fecha_lectura 
+                FROM facturas f
+                JOIN usuarios_servicio us ON f.id_usuario = us.id_usuario
+                LEFT JOIN lecturas l ON f.id_lectura = l.id_lectura
+                WHERE f.id_factura = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $id_factura);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $invoice = $res->fetch_assoc();
+        if ($invoice) {
+            echo json_encode(['success' => true, 'invoice' => $invoice]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Invoice not found']);
+        }
+        exit;
+    }
+
+    if ($action === 'get_user_details') {
+        $id_usuario = intval($_GET['id_usuario']);
+        $stmt = $conn->prepare("SELECT * FROM usuarios_servicio WHERE id_usuario = ?");
+        $stmt->bind_param("i", $id_usuario);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $user = $res->fetch_assoc();
+        if ($user) {
+             echo json_encode(['success' => true, 'user' => $user]);
+        } else {
+             echo json_encode(['success' => false, 'message' => 'User not found']);
+        }
+        exit;
+    }
+
     if ($action === 'get_invoices') {
         $id_usuario = isset($_GET['id_usuario']) ? intval($_GET['id_usuario']) : null;
         
@@ -157,15 +201,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'update_rate') {
         $rate = floatval($_POST['rate']);
+        $rateExcess = isset($_POST['rate_excess']) ? floatval($_POST['rate_excess']) : 0;
+        
         if ($rate > 0) {
             $stmt = $conn->prepare("INSERT INTO configuracion (clave, valor) VALUES ('tarifa_m3', ?) ON DUPLICATE KEY UPDATE valor = ?");
             $rateStr = strval($rate);
             $stmt->bind_param("ss", $rateStr, $rateStr);
-            if ($stmt->execute()) {
-                echo json_encode(['success' => true]);
-            } else {
-                echo json_encode(['success' => false, 'message' => 'Error update rate']);
+            $stmt->execute();
+            
+            if ($rateExcess >= 0) {
+                $stmtExcess = $conn->prepare("INSERT INTO configuracion (clave, valor) VALUES ('tarifa_excedente', ?) ON DUPLICATE KEY UPDATE valor = ?");
+                $rateExcessStr = strval($rateExcess);
+                $stmtExcess->bind_param("ss", $rateExcessStr, $rateExcessStr);
+                $stmtExcess->execute();
             }
+            
+            echo json_encode(['success' => true]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Invalid rate']);
         }

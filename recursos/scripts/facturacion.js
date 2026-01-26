@@ -11,8 +11,12 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(data => {
             if (data.success) {
                 currentRate = parseFloat(data.rate);
+                // Check if rate_excess is defined, otherwise default to 15, but allow 0
+                currentRateExcess = (data.rate_excess !== undefined && data.rate_excess !== null) ? parseFloat(data.rate_excess) : 15.00;
                 previousRate = currentRate;
+                previousRateExcess = currentRateExcess;
                 document.getElementById('rateDisplay').textContent = `$${currentRate.toFixed(2)}`;
+                document.getElementById('rateExcessDisplay').textContent = `$${currentRateExcess.toFixed(2)}`;
             }
         })
         .catch(err => console.error('Error cargando tarifa:', err));
@@ -120,13 +124,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const rateDisplay = document.getElementById('rateDisplay');
 
     let currentRate = 10.00;
+    let currentRateExcess = 15.00;
     let previousRate = 10.00;
+    let previousRateExcess = 15.00;
 
     // Mostrar sección de edición
     btnEditRate.addEventListener('click', function () {
         rateDisplaySection.style.display = 'none';
         rateEditSection.style.display = 'block';
         rateInput.value = currentRate.toFixed(2);
+        document.getElementById('ratePerM3Excess').value = currentRateExcess.toFixed(2);
         rateInput.focus();
     });
 
@@ -135,16 +142,18 @@ document.addEventListener('DOMContentLoaded', function () {
         rateEditSection.style.display = 'none';
         rateDisplaySection.style.display = 'block';
         rateInput.value = currentRate.toFixed(2);
+        document.getElementById('ratePerM3Excess').value = currentRateExcess.toFixed(2);
     });
 
     // Guardar nueva tarifa
     btnSaveRate.addEventListener('click', function () {
         const newRate = parseFloat(rateInput.value);
+        const newRateExcess = parseFloat(document.getElementById('ratePerM3Excess').value);
 
-        if (isNaN(newRate) || newRate <= 0) {
+        if (isNaN(newRate) || newRate <= 0 || isNaN(newRateExcess) || newRateExcess < 0) {
             mostrarNotificacion(
                 'Error de Validación',
-                'Por favor ingresa una tarifa válida mayor a $0.00',
+                'Por favor ingresa tarifas válidas.<br>Tarifa Base: > $0.00<br>Excedente: >= $0.00',
                 'error'
             );
             return;
@@ -153,20 +162,27 @@ document.addEventListener('DOMContentLoaded', function () {
         // Confirmar cambio
         mostrarConfirmacion(
             '¿Confirmar Cambio de Tarifa?',
-            `¿Estás seguro de cambiar la tarifa de <strong>$${currentRate.toFixed(2)}</strong> a <strong>$${newRate.toFixed(2)}</strong> por m³?<br><br>Este cambio afectará el cálculo de todas las nuevas facturas.`,
+            `¿Estás seguro de cambiar las tarifas?<br>
+             Base: <strong>$${newRate.toFixed(2)}</strong> (antes $${currentRate.toFixed(2)})<br>
+             Excedente: <strong>$${newRateExcess.toFixed(2)}</strong> (antes $${currentRateExcess.toFixed(2)})<br><br>
+             Este cambio afectará el cálculo de todas las nuevas facturas.`,
             function () {
                 // Aceptar: Guardar en BD
                 fetch('../controladores/facturacion.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: `action=update_rate&rate=${newRate}`
+                    body: `action=update_rate&rate=${newRate}&rate_excess=${newRateExcess}`
                 })
                     .then(r => r.json())
                     .then(data => {
                         if (data.success) {
                             previousRate = currentRate;
                             currentRate = newRate;
-                            rateDisplay.textContent = `$${currentRate.toFixed(2)}`;
+                            previousRateExcess = currentRateExcess;
+                            currentRateExcess = newRateExcess;
+
+                            document.getElementById('rateDisplay').textContent = `$${currentRate.toFixed(2)}`;
+                            document.getElementById('rateExcessDisplay').textContent = `$${currentRateExcess.toFixed(2)}`;
                             rateEditSection.style.display = 'none';
                             rateDisplaySection.style.display = 'block';
 
@@ -189,6 +205,7 @@ document.addEventListener('DOMContentLoaded', function () {
             function () {
                 // Cancelar
                 rateInput.value = currentRate.toFixed(2);
+                document.getElementById('ratePerM3Excess').value = currentRateExcess.toFixed(2);
             }
         );
     });
@@ -199,132 +216,171 @@ document.addEventListener('DOMContentLoaded', function () {
         pendingReadings = [];
         document.getElementById('clientName').textContent = '-';
         document.getElementById('clientContract').textContent = '-';
+        document.getElementById('clientMeter').textContent = '-';
         document.getElementById('pendingReadingsSection').style.display = 'none';
         document.getElementById('selectedReadingSection').style.display = 'none';
         document.getElementById('btnGenerate').disabled = true;
     }
 
-    function selectUser(user) {
+    // --- Cross-Module Payment Initiation ---
+    document.addEventListener('initiatePayment', function (e) {
+        const { userId, readingId } = e.detail;
+        console.log("Payment Requested for:", userId, readingId);
+
+        // Fetch User Details to Select
+        fetch(`../controladores/facturacion.php?action=get_user_details&id=${userId}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.user) {
+                    selectUser(data.user, readingId);
+                }
+            });
+    });
+
+    function selectUser(user, autoSelectReadingId = null) {
         selectedUser = user;
         searchInput.value = user.nombre;
         resultsContainer.style.display = 'none';
 
-        // Fill Info
+        // Update UI
         document.getElementById('clientName').textContent = user.nombre;
         document.getElementById('clientContract').textContent = user.no_contrato;
+        document.getElementById('clientMeter').textContent = user.no_medidor || '-';
 
-        // Fetch Pending Readings (TODAS)
-        fetch(`../controladores/facturacion.php?action=get_pending_readings&id_usuario=${user.id_usuario}`)
+        // Load specific data
+        // Pass autoSelectReadingId to subsequent function
+        loadUserPendingReadings(user.id_usuario, autoSelectReadingId);
+
+        // Load global history always
+        loadInvoices(null);
+
+        document.getElementById('btnGenerate').disabled = true;
+    }
+
+    function loadUserPendingReadings(userId, preSelectedId = null) {
+        const listContainer = document.getElementById('pendingReadingsList');
+        const section = document.getElementById('pendingReadingsSection');
+
+        listContainer.innerHTML = '<div style="text-align:center;"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>';
+        section.style.display = 'block';
+
+        fetch(`../controladores/facturacion.php?action=get_pending_readings&id_usuario=${userId}`)
             .then(r => r.json())
             .then(data => {
                 if (data.success && data.readings && data.readings.length > 0) {
                     pendingReadings = data.readings;
-
-                    if (pendingReadings.length === 1) {
-                        // Solo una lectura, seleccionarla automáticamente
-                        selectReading(pendingReadings[0]);
-                    } else {
-                        // Múltiples lecturas, mostrar lista para seleccionar
-                        mostrarLecturasPendientes(pendingReadings);
-                        mostrarNotificacion(
-                            'Lecturas Pendientes',
-                            `Este usuario tiene <strong>${pendingReadings.length} lecturas pendientes</strong> de pago. Por favor selecciona una para facturar.`,
-                            'info'
-                        );
-                    }
+                    mostrarLecturasPendientes(pendingReadings, preSelectedId);
                 } else {
-                    currentReading = null;
-                    pendingReadings = [];
-                    document.getElementById('pendingReadingsSection').style.display = 'none';
-                    document.getElementById('selectedReadingSection').style.display = 'none';
-                    document.getElementById('btnGenerate').disabled = true;
-                    mostrarNotificacion('Info', 'No hay lecturas pendientes para este usuario', 'info');
+                    listContainer.innerHTML = '<p style="text-align:center; color:#6b7280; margin-top:0.5rem;">No hay lecturas pendientes por cobrar.</p>';
                 }
+            })
+            .catch(e => {
+                listContainer.innerHTML = '<p style="text-align:center; color:red;">Error al cargar lecturas.</p>';
+                console.error(e);
             });
-
-        loadInvoices(user.id_usuario);
     }
 
-    function mostrarLecturasPendientes(readings) {
-        const container = document.getElementById('pendingReadingsList');
-        container.innerHTML = '';
+    function mostrarLecturasPendientes(readings, preSelectedId = null) {
+        const listContainer = document.getElementById('pendingReadingsList');
+        listContainer.innerHTML = '';
 
         readings.forEach((reading, index) => {
             const fecha = new Date(reading.fecha_lectura);
-            const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            // Use UTC to avoid timezone shifts or just generic date parsing
+            const meses = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
+                'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
             const mes = meses[fecha.getMonth()];
-            const año = fecha.getFullYear();
+            const anio = fecha.getFullYear();
 
-            // Determinar clases según consumo
-            let consumoClass = '';
-            let lecturaClass = '';
-            if (parseFloat(reading.consumo_m3) > 30) {
-                consumoClass = 'high-consumption';
-            }
-            if (parseFloat(reading.lectura_actual) < parseFloat(reading.lectura_anterior)) {
-                lecturaClass = 'negative';
+            // Format Amount
+            const amount = calculateTotal(reading.consumo_m3);
+
+            // Classes for styling
+            const consumoClass = parseFloat(reading.consumo_m3) > 30 ? 'high-consumption' : '';
+            const lecturaClass = parseFloat(reading.lectura_actual) < parseFloat(reading.lectura_anterior) ? 'negative' : '';
+
+            // Observations
+            let obsHTML = '';
+            if (reading.observaciones && reading.observaciones.trim() !== '') {
+                obsHTML = `<div class="reading-observations-mini"><i class="fas fa-info-circle"></i> Obs: ${reading.observaciones}</div>`;
             }
 
             const item = document.createElement('div');
             item.className = 'pending-reading-item';
-            item.dataset.index = index;
-
-            let observacionesHTML = '';
-            if (reading.observaciones && reading.observaciones.trim() !== '') {
-                observacionesHTML = `
-                    <div class="reading-observations">
-                        <i class="fas fa-info-circle"></i> ${reading.observaciones}
-                    </div>
-                `;
-            }
+            item.dataset.id = reading.id_lectura;
 
             item.innerHTML = `
-                <div class="reading-month">${mes} ${año}</div>
-                <div class="reading-details">
-                    <div class="reading-detail">
-                        <span class="reading-detail-label">Fecha</span>
-                        <span class="reading-detail-value">${reading.fecha_lectura}</span>
+                <div class="reading-header-row">
+                    <div class="reading-date-badge">
+                        <i class="far fa-calendar-alt"></i> ${mes} ${anio}
                     </div>
-                    <div class="reading-detail">
-                        <span class="reading-detail-label">Consumo</span>
-                        <span class="reading-detail-value ${consumoClass}">${reading.consumo_m3} m³</span>
-                    </div>
-                    <div class="reading-detail">
-                        <span class="reading-detail-label">Lectura Actual</span>
-                        <span class="reading-detail-value ${lecturaClass}">${reading.lectura_actual}</span>
-                    </div>
-                    <div class="reading-detail">
-                        <span class="reading-detail-label">Lectura Anterior</span>
-                        <span class="reading-detail-value">${reading.lectura_anterior}</span>
+                    <div class="reading-amount-preview">
+                         $${amount.toFixed(2)}
                     </div>
                 </div>
-                ${observacionesHTML}
+                
+                <div class="reading-stats-grid">
+                    <div class="stat-box">
+                        <span class="stat-label">Consumo</span>
+                        <span class="stat-value ${consumoClass}">${reading.consumo_m3} m³</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">Actual</span>
+                        <span class="stat-value ${lecturaClass}">${reading.lectura_actual}</span>
+                    </div>
+                </div>
+                ${obsHTML}
             `;
 
-            item.addEventListener('click', function () {
-                // Remover selección anterior
-                document.querySelectorAll('.pending-reading-item').forEach(el => {
-                    el.classList.remove('selected');
-                });
-                // Seleccionar este
-                this.classList.add('selected');
+            item.onclick = function () {
+                document.querySelectorAll('.pending-reading-item').forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
                 selectReading(reading);
-            });
+            };
 
-            container.appendChild(item);
+            listContainer.appendChild(item);
         });
 
-        document.getElementById('pendingReadingsSection').style.display = 'block';
-        document.getElementById('selectedReadingSection').style.display = 'none';
+        // Auto-select if requested
+        // Auto-select logic
+        if (preSelectedId) {
+            const target = readings.find(r => r.id_lectura == preSelectedId);
+            if (target) {
+                setTimeout(() => {
+                    const domItem = listContainer.querySelector(`.pending-reading-item[data-id="${preSelectedId}"]`);
+                    if (domItem) domItem.click();
+                }, 100);
+            }
+        } else if (readings.length === 1) {
+            // Auto-select the only reading if none pre-selected
+            setTimeout(() => {
+                const item = listContainer.querySelector('.pending-reading-item');
+                if (item) item.click();
+            }, 100);
+        } else if (readings.length > 1) {
+            // Warn if multiple readings
+            mostrarNotificacion(
+                'Múltiples Adeudos Detectados',
+                `Este usuario tiene <strong>${readings.length} lecturas pendientes</strong> de pago.`,
+                'warning'
+            );
+        }
     }
+
 
     function selectReading(reading) {
         currentReading = reading;
 
         // Mostrar información de la lectura seleccionada
+        const fecha = new Date(reading.fecha_lectura);
+        const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        const mesNombre = meses[fecha.getMonth()];
+        const anio = fecha.getFullYear();
+
+        document.getElementById('labelMonthPlaceholder').textContent = `${mesNombre} ${anio}`;
         document.getElementById('readingPeriod').textContent = reading.fecha_lectura;
         document.getElementById('consumption').textContent = `${reading.consumo_m3} m³`;
+        document.getElementById('previousReading').textContent = reading.lectura_anterior;
         document.getElementById('currentReading').textContent = reading.lectura_actual;
 
         // Mostrar observaciones si existen
@@ -368,9 +424,19 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function calculateTotal(m3) {
-        const base = 50; // Base rate
+        const base_limit = 30; // Limit for normal rate
         const rate = currentRate || 10.00;
-        return base + (m3 * rate);
+        const rateExcess = currentRateExcess || 15.00;
+
+        let total = 0;
+        if (m3 <= base_limit) {
+            total = m3 * rate;
+        } else {
+            const excess = m3 - base_limit;
+            total = (base_limit * rate) + (excess * rateExcess);
+        }
+
+        return total;
     }
 
     // Generate Invoice
@@ -594,19 +660,27 @@ document.addEventListener('DOMContentLoaded', function () {
                     currentReading = {
                         id_lectura: lectura.id_lectura,
                         fecha_lectura: lectura.fecha_lectura,
-                        consumo_m3: lectura.consumo_m3
+                        consumo_m3: lectura.consumo_m3,
+                        lectura_actual: lectura.lectura_actual,
+                        lectura_anterior: lectura.lectura_anterior,
+                        observaciones: lectura.observaciones
                     };
                     searchInput.value = lectura.nombre;
                     document.getElementById('clientName').textContent = lectura.nombre;
                     document.getElementById('clientContract').textContent = lectura.no_contrato;
+                    document.getElementById('clientMeter').textContent = lectura.no_medidor;
+
+                    // Asegurar asignación inicial de campos aunque luego se re-seleccionen
                     document.getElementById('readingPeriod').textContent = lectura.fecha_lectura;
                     document.getElementById('consumption').textContent = `${lectura.consumo_m3} m³`;
-                    const total = calculateTotal(lectura.consumo_m3);
-                    document.getElementById('totalAmount').textContent = `$${total.toFixed(2)}`;
-                    document.getElementById('btnGenerate').disabled = false;
-                    document.getElementById('selectedReadingSection').style.display = 'block';
+                    document.getElementById('previousReading').textContent = lectura.lectura_anterior;
+                    document.getElementById('currentReading').textContent = lectura.lectura_actual;
+                    document.getElementById('totalAmount').textContent = `$${calculateTotal(lectura.consumo_m3).toFixed(2)}`;
 
+                    // Cargar lista completa de pendientes y seleccionar la específica
+                    loadUserPendingReadings(lectura.id_usuario, lectura.id_lectura);
                     loadInvoices(lectura.id_usuario);
+
                     mostrarNotificacion('Lectura Cargada', `Se ha cargado la lectura del ${lectura.fecha_lectura}`, 'success');
                     window.history.replaceState({}, document.title, window.location.pathname);
                 }
@@ -633,17 +707,43 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     window.mostrarConfirmacionPago = function (idFactura, detalles) {
-        const base = 50;
-        const consumoValor = (detalles.consumo * detalles.tarifa).toFixed(2);
+        const base_limit = 30;
+        const totalConsumo = parseFloat(detalles.consumo);
+        const rateBase = detalles.tarifa;
+        const rateExcess = currentRateExcess; // Use global variable directly or pass it in 'detalles'
+
+        let baseConsumo = 0;
+        let excessConsumo = 0;
+        let baseCost = 0;
+        let excessCost = 0;
+
+        if (totalConsumo <= base_limit) {
+            baseConsumo = totalConsumo;
+            baseCost = baseConsumo * rateBase;
+        } else {
+            baseConsumo = base_limit;
+            excessConsumo = totalConsumo - base_limit;
+            baseCost = baseConsumo * rateBase;
+            excessCost = excessConsumo * rateExcess;
+        }
+
+        let breakdownHTML = `
+            <li>Consumo Base (${baseConsumo} m³ x $${rateBase.toFixed(2)}): <strong>$${baseCost.toFixed(2)}</strong></li>
+        `;
+
+        if (excessConsumo > 0) {
+            breakdownHTML += `
+                <li style="color: #c2410c; font-weight: 600;">Consumo Excedente (${excessConsumo.toFixed(2)} m³ x $${rateExcess.toFixed(2)}): <strong>$${excessCost.toFixed(2)}</strong></li>
+            `;
+        }
 
         const mensaje = `
             <div style="text-align: left; background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px solid #e2e8f0;">
                 <p><strong>Usuario:</strong> ${detalles.nombre}</p>
                 <hr style="margin: 0.5rem 0; border-color: #e2e8f0;">
-                <p><strong>Desglose:</strong></p>
+                <p><strong>Desglose de Cobro:</strong></p>
                 <ul style="margin: 0; padding-left: 1.2rem; font-size: 0.9rem; color: var(--text-secondary);">
-                    <li>Tarifa Base: $${base.toFixed(2)}</li>
-                    <li>Consumo (${detalles.consumo} m³ x $${detalles.tarifa.toFixed(2)}): $${consumoValor}</li>
+                    ${breakdownHTML}
                 </ul>
                 <hr style="margin: 0.5rem 0; border-color: #e2e8f0;">
                 <p style="font-size: 1.1rem; color: #1e40af; text-align: right;"><strong>Total a Pagar: $${detalles.total.toFixed(2)}</strong></p>
@@ -700,6 +800,47 @@ document.addEventListener('DOMContentLoaded', function () {
         const fecha = new Date(invoice.fecha_emision).toLocaleDateString();
         const hora = new Date(invoice.fecha_emision).toLocaleTimeString();
 
+        // Recalcular desglose para el ticket (usando tarifas actuales como referencia, 
+        // idealmente esto se debería guardar en BD al momento de facturar)
+        const totalConsumo = parseFloat(invoice.consumo_m3 || 0);
+        const base_limit = 30;
+        let baseConsumo = 0;
+        let excessConsumo = 0;
+        let baseCost = 0;
+        let excessCost = 0;
+
+        // Usamos la tarifa actual y excedente actual para reconstruir el desglose visualmente
+        // NOTA: Si las tarifas cambiaron desde que se hizo la factura, esto podría ser inexacto.
+        // Para mayor precisión, se debería guardar el desglose en la tabla de facturas.
+        const rateBase = currentRate;
+        const rateExcess = currentRateExcess;
+
+        if (totalConsumo <= base_limit) {
+            baseConsumo = totalConsumo;
+            baseCost = baseConsumo * rateBase;
+        } else {
+            baseConsumo = base_limit;
+            excessConsumo = totalConsumo - base_limit;
+            baseCost = baseConsumo * rateBase;
+            excessCost = excessConsumo * rateExcess;
+        }
+
+        let breakdownItems = `
+            <div class="ticket-row" style="font-size: 11px;">
+                <span>Consumo Base (${baseConsumo}m³)</span>
+                <span>$${baseCost.toFixed(2)}</span>
+            </div>
+        `;
+
+        if (excessConsumo > 0) {
+            breakdownItems += `
+                <div class="ticket-row" style="font-size: 11px;">
+                    <span>Excedente (${excessConsumo.toFixed(2)}m³)</span>
+                    <span>$${excessCost.toFixed(2)}</span>
+                </div>
+            `;
+        }
+
         const htmlTicket = `
             <div class="ticket-paper">
                 <div class="ticket-logo">SISTEMA DE AGUA POTABLE DE</div>
@@ -723,10 +864,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 
                 <div class="ticket-items">
                     <div class="ticket-row">
-                        <span>CONSUMO AGUA POTABLE</span>
-                        <span>$${parseFloat(invoice.monto_total).toFixed(2)}</span>
+                        <span>CONSUMO DE AGUA (${totalConsumo} m³)</span>
                     </div>
-                    <div class="ticket-row" style="font-size:10px; color:#555;">
+                    ${breakdownItems}
+                    <div class="ticket-row" style="font-size:10px; color:#555; margin-top:5px;">
                         <span>(Periodo: ${invoice.fecha_lectura || 'Actual'})</span>
                     </div>
                 </div>
@@ -842,4 +983,61 @@ document.addEventListener('DOMContentLoaded', function () {
         modal.querySelector('.btn-conf-aceptar').addEventListener('click', () => { cerrar(); if (onAceptar) onAceptar(); });
         modal.querySelector('.confirmacion-overlay').addEventListener('click', () => { cerrar(); if (onCancelar) onCancelar(); });
     }
+    // Event Listener for Ticket Request from Reports
+    document.addEventListener('showTicketRequest', function (e) {
+        if (e.detail && e.detail.id_factura) {
+            generarTicketExterno(e.detail.id_factura);
+        }
+    });
+
+    // Expose ticket generation function globally
+    window.generarTicketExterno = function (idFactura) {
+        fetch(`../controladores/facturacion.php?action=get_invoices&id_usuario=null`) // Need a way to get specific invoice details easily
+        // Actually, get_invoices returns a list. We can filter or add a specific get.
+        // Let's assume we use a specific action or filter the list of the user if we knew the user. 
+        // But from report we have ID.
+        // Let's create a specific fetch for single invoice details to be safe.
+        // Or reuse the existing object if passed?
+        // Let's fetch it.
+        fetch(`../controladores/facturacion.php?action=get_single_invoice&id_factura=${idFactura}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.invoice) {
+                    mostrarModalTicket(data.invoice);
+                } else {
+                    mostrarNotificacion('Error', 'No se pudo cargar el ticket.', 'error');
+                }
+            })
+            .catch(e => console.error(e));
+    };
+
+    // Helper to get single invoice (needs PHP support or use existing list logic)
+    // If PHP doesn't support `get_single_invoice`, we might need to add it or hack it.
+    // For now, let's assume valid ID returns data.
+
+    // Expose notifications globally for reports
+    window.mostrarNotificacion = mostrarNotificacion;
+    window.mostrarConfirmacion = mostrarConfirmacion;
+
+    document.addEventListener('initiatePayment', function (e) {
+        const userId = e.detail.userId;
+        const readingId = e.detail.readingId;
+
+        // Fetch user from DB
+        fetch(`../controladores/facturacion.php?action=get_user_details&id_usuario=${userId}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.user) {
+                    selectUser(data.user, readingId); // Auto-select user and reading
+                    // If readingId is provided, `selectUser` calls `loadUserPendingReadings` and passes it.
+                } else {
+                    mostrarNotificacion('Error', 'No se encontró el usuario para cargar.', 'error');
+                }
+            })
+            .catch(e => {
+                console.error(e);
+                mostrarNotificacion('Error de Conexión', 'No se pudo cargar el usuario.', 'error');
+            });
+    });
+
 });
