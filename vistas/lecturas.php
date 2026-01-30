@@ -8,7 +8,7 @@
     <link rel="icon" href="../recursos/imagenes/SAPAZ.jpeg" type="image/jpeg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../recursos/estilos/panel_admin.css?v=2.002">
-    <link rel="stylesheet" href="../recursos/estilos/lecturas.css?v=3.50000">
+    <link rel="stylesheet" href="../recursos/estilos/lecturas.css?v=3.506000">
 </head>
 <body>
     <!-- Header and Sidebar -->
@@ -24,7 +24,7 @@
                 <div class="form-container">
                     <h3>Buscador de Medidor</h3>
                     <div class="form-group">
-                        <label for="searchInput">Ingrese abajo el nombre del Beneficiario o Numero de medidor. Por favor</label>
+                        <label for="searchInput">Ingrese el nombre del Beneficiario o Numero de medidor. ⬇️</label>
                         <div class="input-group">
                             <input type="text" id="searchInput" class="form-control" placeholder=" 🔍 Ingrese nombre o número de medidor">
                             <button type="button" id="clearSearch" class="btn-clear" title="Limpiar búsqueda">
@@ -176,6 +176,6 @@
 
     <script src="../recursos/scripts/panel_admin.js?v=2.002"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-    <script src="../recursos/scripts/lecturas.js?v=350000"></script>
+    <script src="../recursos/scripts/lecturas.js?v=3560000"></script>
 </body>
 </html>

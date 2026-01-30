@@ -302,6 +302,6 @@
     </div>
 
     <script src="../recursos/scripts/panel_admin.js?v=2.002"></script>
-    <script src="../recursos/scripts/historial_lecturas.js?v=2.05000"></script>
+    <script src="../recursos/scripts/historial_lecturas.js?v=2.07000"></script>
 </body>
 </html>

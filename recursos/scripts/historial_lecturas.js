@@ -1,4 +1,4 @@
-// historial_lecturas.js - v2.05000
+// historial_lecturas.js - v2.07000
 
 document.addEventListener('DOMContentLoaded', function () {
     const historialContainer = document.getElementById('historialContainer');
@@ -297,8 +297,16 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         filtrosEstado.busqueda = valor;
-        actualizarFiltrosActivos();
-        cargarHistorial(1);
+
+        // Debounce: Wait for user to stop typing
+        if (timeoutBusqueda) {
+            clearTimeout(timeoutBusqueda);
+        }
+
+        timeoutBusqueda = setTimeout(() => {
+            actualizarFiltrosActivos();
+            cargarHistorial(1);
+        }, 600);
     });
 
     btnClearSearch.addEventListener('click', function () {
@@ -454,10 +462,10 @@ document.addEventListener('DOMContentLoaded', function () {
         if (cardWrapper) {
             if (e.target.closest('.btn-edit')) {
                 const id = e.target.closest('.btn-edit').dataset.id;
-                mostrarModalEdicion(id);
+                editarLectura(id);
             } else if (e.target.closest('.btn-delete')) {
                 const id = e.target.closest('.btn-delete').dataset.id;
-                confirmarEliminacion(id);
+                eliminarLectura(id);
             } else {
                 // Cualquier otro clic en la card, mostrar vista
                 const btnView = cardWrapper.querySelector('.btn-view');
@@ -484,9 +492,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Mostrar modal de vista
     function mostrarModalVista(id) {
+        mostrarLoading(true);
         fetch(`../controladores/historial_lecturas.php?action=get_lectura&id=${id}`)
             .then(response => response.json())
             .then(data => {
+                mostrarLoading(false);
                 if (data.success) {
                     const lectura = data.lectura;
                     const fecha = new Date(lectura.fecha_lectura).toLocaleDateString('es-ES');
@@ -514,6 +524,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch(error => {
+                mostrarLoading(false);
                 console.error('Error:', error);
                 showModal('Error', 'Error de conexión', 'error');
             });
@@ -642,17 +653,8 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Event delegation for edit and delete buttons
-    document.addEventListener('click', function (e) {
-        if (e.target.closest('.btn-edit')) {
-            const id = e.target.closest('.btn-edit').dataset.id;
-            editarLectura(id);
-        }
-        if (e.target.closest('.btn-delete')) {
-            const id = e.target.closest('.btn-delete').dataset.id;
-            eliminarLectura(id);
-        }
-    });
+    // Event listener for edit and delete buttons removed (it was redundant and causing issues)
+    // The handling is done in the historialContainer event listener above
 
     // Edit modal events
     editCloseBtn.addEventListener('click', closeEditModal);

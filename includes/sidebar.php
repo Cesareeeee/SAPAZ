@@ -1,3 +1,67 @@
+<style>
+/* Estilos Personalizados para User Info en Header */
+.user-info {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 6px 15px !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-radius: 50px !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    transition: all 0.3s ease !important;
+    cursor: pointer;
+}
+
+.user-info:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    line-height: 1.2;
+}
+
+.welcome-msg {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 400;
+    letter-spacing: 0.5px;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.user-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.user-avatar-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.user-info .user-avatar {
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--accent-color) !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.user-info:hover .user-avatar {
+    transform: scale(1.1);
+    border-color: #fff !important;
+}
+</style>
 <header>
     <div class="logo">
         <button class="menu-toggle" id="menuToggle">
@@ -8,8 +72,13 @@
         <span class="full-name">SISTEMA DE AGUA POTABLE Y ALCANTARILLADO DE ZECALACOAYAN</span>
     </div>
     <div class="user-info">
-        <span><?php echo isset($_SESSION['nombre_completo']) ? $_SESSION['nombre_completo'] : 'Usuario'; ?></span>
-        <img src="../recursos/imagenes/SAPAZ.jpeg" alt="Usuario">
+        <div class="user-details">
+            <span class="welcome-msg">Bienvenido,</span>
+            <span class="user-name"><?php echo isset($_SESSION['nombre_completo']) ? $_SESSION['nombre_completo'] : 'Usuario'; ?></span>
+        </div>
+        <a href="configuracion.php" title="Ir a Configuración" class="user-avatar-link">
+            <img src="../recursos/imagenes/SAPAZ.jpeg" alt="Configuración" class="user-avatar">
+        </a>
     </div>
 </header>
 
@@ -70,14 +139,15 @@ $es_admin = ($rol_usuario === 'ADMIN');
             </a>
         </li>
         
-        <!-- Configuración - Solo Administradores -->
+        <?php endif; ?>
+
+        <!-- Configuración - Todos los usuarios -->
         <li>
             <a href="configuracion.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'configuracion.php' ? 'active' : ''; ?>">
                 <i class="fas fa-cog"></i>
                 <span>Configuración</span>
             </a>
         </li>
-        <?php endif; ?>
         
         <!-- Cerrar Sesión - Todos los usuarios -->
         <li>

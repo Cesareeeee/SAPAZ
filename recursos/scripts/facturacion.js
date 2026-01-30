@@ -147,6 +147,42 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('ratePerM3Excess').value = currentRateExcess.toFixed(2);
     });
 
+    // Helper para Loader Global
+    function showGlobalLoader(message = 'Cargando...') {
+        let loader = document.getElementById('globalLoaderOverlay');
+        if (!loader) {
+            loader = document.createElement('div');
+            loader.id = 'globalLoaderOverlay';
+            loader.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(255, 255, 255, 0.8);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+                font-family: 'Segoe UI', sans-serif;
+            `;
+            loader.innerHTML = `
+                <div style="font-size: 3rem; color: #3b82f6;"><i class="fas fa-circle-notch fa-spin"></i></div>
+                <div id="globalLoaderMessage" style="margin-top: 1rem; font-size: 1.2rem; color: #1e293b; font-weight: 600;">${message}</div>
+            `;
+            document.body.appendChild(loader);
+        } else {
+            document.getElementById('globalLoaderMessage').textContent = message;
+            loader.style.display = 'flex';
+        }
+    }
+
+    function hideGlobalLoader() {
+        const loader = document.getElementById('globalLoaderOverlay');
+        if (loader) loader.style.display = 'none';
+    }
+
     // Guardar nueva tarifa
     btnSaveRate.addEventListener('click', function () {
         const newRate = parseFloat(rateInput.value);
@@ -169,6 +205,7 @@ document.addEventListener('DOMContentLoaded', function () {
              Excedente: <strong>$${newRateExcess.toFixed(2)}</strong> (antes $${currentRateExcess.toFixed(2)})<br><br>
              Este cambio afectará el cálculo de todas las nuevas facturas.`,
             function () {
+                showGlobalLoader('Actualizando tarifas...');
                 // Aceptar: Guardar en BD
                 fetch('../controladores/facturacion.php', {
                     method: 'POST',
@@ -177,6 +214,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 })
                     .then(r => r.json())
                     .then(data => {
+                        hideGlobalLoader();
                         if (data.success) {
                             previousRate = currentRate;
                             currentRate = newRate;
@@ -202,6 +240,11 @@ document.addEventListener('DOMContentLoaded', function () {
                         } else {
                             mostrarNotificacion('Error', 'No se pudo guardar la tarifa en la base de datos', 'error');
                         }
+                    })
+                    .catch(err => {
+                        hideGlobalLoader();
+                        console.error(err);
+                        mostrarNotificacion('Error', 'Error de conexión', 'error');
                     });
             },
             function () {
@@ -444,6 +487,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const total = parseFloat(document.getElementById('totalAmount').textContent.replace('$', ''));
         const consumo = parseFloat(currentReading.consumo_m3);
 
+        showGlobalLoader('Generando Factura...');
         fetch('../controladores/facturacion.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -451,6 +495,7 @@ document.addEventListener('DOMContentLoaded', function () {
         })
             .then(r => r.json())
             .then(data => {
+                hideGlobalLoader();
                 if (data.success) {
                     const facturaId = data.id;
                     mostrarNotificacion('Éxito', 'Factura generada correctamente', 'success');
@@ -471,6 +516,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else {
                     mostrarNotificacion('Error', data.message || 'Error al generar factura', 'error');
                 }
+            })
+            .catch(err => {
+                hideGlobalLoader();
+                console.error(err);
+                mostrarNotificacion('Error', 'Error al generar factura', 'error');
             });
     });
 
@@ -758,6 +808,7 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     function realizarPago(id, total) {
+        showGlobalLoader('Procesando pago...');
         fetch('../controladores/facturacion.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -765,6 +816,7 @@ document.addEventListener('DOMContentLoaded', function () {
         })
             .then(r => r.json())
             .then(data => {
+                hideGlobalLoader();
                 if (data.success) {
                     mostrarNotificacion('Pago Exitoso', 'El pago ha sido registrado correctamente.', 'success');
                     // Notify other modules (e.g., reports)
@@ -790,6 +842,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else {
                     mostrarNotificacion('Error', 'No se pudo procesar el pago', 'error');
                 }
+            })
+            .catch(err => {
+                hideGlobalLoader();
+                console.error(err);
+                mostrarNotificacion('Error', 'Error de conexión al procesar pago', 'error');
             });
     }
 

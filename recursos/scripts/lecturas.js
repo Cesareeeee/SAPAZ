@@ -120,6 +120,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         searchTimeout = setTimeout(() => {
+            // Mostrar spinner
+            searchResults.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Buscando...</div>';
+
             fetch(`../controladores/lecturas.php?action=search&query=${encodeURIComponent(query)}`)
                 .then(response => response.json())
                 .then(data => {
@@ -184,6 +187,9 @@ document.addEventListener('DOMContentLoaded', function () {
         searchResults.innerHTML = html;
 
         // Obtener última lectura
+        document.getElementById('lecturaAnterior').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        document.getElementById('fechaAnterior').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
         fetch(`../controladores/lecturas.php?action=get_last_reading&id_usuario=${id}`)
             .then(response => response.json())
             .then(data => {
@@ -223,6 +229,8 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(error => {
                 console.error('Error:', error);
+                document.getElementById('lecturaAnterior').textContent = '-';
+                document.getElementById('fechaAnterior').textContent = '-';
                 showModal('Error', 'Error al obtener datos', 'error');
             });
     }
@@ -548,9 +556,11 @@ document.addEventListener('DOMContentLoaded', function () {
         filtroValorBenef.innerHTML = '<option value="">Seleccione...</option>';
 
         if (tipo === 'calle') {
+            filtroValorBenef.innerHTML = '<option value="">Cargando calles...</option>';
             fetch('../controladores/lecturas.php?action=get_calles')
                 .then(response => response.json())
                 .then(data => {
+                    filtroValorBenef.innerHTML = '<option value="">Seleccione...</option>';
                     if (data.success) {
                         data.calles.forEach(calle => {
                             const option = document.createElement('option');
@@ -561,9 +571,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 });
         } else if (tipo === 'barrio') {
+            filtroValorBenef.innerHTML = '<option value="">Cargando barrios...</option>';
             fetch('../controladores/lecturas.php?action=get_barrios')
                 .then(response => response.json())
                 .then(data => {
+                    filtroValorBenef.innerHTML = '<option value="">Seleccione...</option>';
                     if (data.success) {
                         data.barrios.forEach(barrio => {
                             const option = document.createElement('option');
@@ -629,6 +641,9 @@ document.addEventListener('DOMContentLoaded', function () {
         } else if (filtrosBenef.tipo === 'barrio') {
             params.append('barrio', filtrosBenef.valor);
         }
+
+        // Mostrar loading spinner
+        beneficiariosContainer.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Cargando beneficiarios...</div>';
 
         fetch(`../controladores/lecturas.php?${params}`)
             .then(response => response.json())

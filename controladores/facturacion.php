@@ -29,6 +29,21 @@ if ($checkTable->num_rows == 0) {
         // Asegurar que sea VARCHAR para que guarde el nombre y no lo convierta a 0 (si fuera INT)
         $colInfo = $checkCol->fetch_assoc();
         if (strpos(strtolower($colInfo['Type']), 'varchar') === false) {
+            // Intentar eliminar la llave foránea si existe para evitar conflictos al modificar la columna
+            try {
+                $conn->query("ALTER TABLE facturas DROP FOREIGN KEY fk_factura_usuario_registro");
+            } catch (Throwable $e) { 
+                // Ignorar si no existe
+            }
+            
+            // Intentar eliminar el índice asociado si existe
+            try {
+                $conn->query("ALTER TABLE facturas DROP INDEX fk_factura_usuario_registro");
+            } catch (Throwable $e) {
+                // Ignorar si no existe
+            }
+
+            // Modificar la columna
             $conn->query("ALTER TABLE facturas MODIFY COLUMN id_usuario_registro VARCHAR(100) NULL");
         }
     }
