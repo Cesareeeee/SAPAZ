@@ -1,4 +1,4 @@
-// Función de Alerta Personalizada (Toast Style)
+      // Función de Alerta Personalizada (Toast Style)
 function mostrarAlerta(titulo, mensaje, tipo = 'success', autoCerrar = true) {
     if (tipo === 'error') autoCerrar = false;
 
@@ -53,6 +53,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const loadingOverlay = document.createElement('div');
     let currentPage = 1;
     let totalPages = 1;
+    let currentSearchTerm = ''; // Variable para almacenar el término de búsqueda actual
+    let currentCalle = ''; // Variable para almacenar el filtro de calle actual
+    let currentBarrio = ''; // Variable para almacenar el filtro de barrio actual
+    let searchTimeout = null; // Timeout para debounce de búsqueda
     loadingOverlay.className = 'loading-overlay';
     loadingOverlay.id = 'loadingOverlay';
     loadingOverlay.innerHTML = '<div class="spinner"></div><p>Cargando...</p>';
@@ -78,9 +82,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const viewLecturasBtn = document.getElementById('viewLecturasBtn');
 
     // --- Load Beneficiaries Function ---
-    function loadBeneficiaries(page = 1) {
+    function loadBeneficiaries(page = 1, searchTerm = '', calle = '', barrio = '') {
         mostrarLoading(true);
-        fetch(`../controladores/beneficiarios.php?action=get_beneficiarios&page=${page}`)
+        // Usar el endpoint de búsqueda que busca en toda la base de datos
+        let url = `../controladores/beneficiarios.php?action=search_beneficiarios&page=${page}&search=${encodeURIComponent(searchTerm)}`;
+        if (calle) url += `&calle=${encodeURIComponent(calle)}`;
+        if (barrio) url += `&barrio=${encodeURIComponent(barrio)}`;
+        fetch(url)
             .then(r => r.json())
             .then(data => {
                 mostrarLoading(false);
@@ -90,55 +98,65 @@ document.addEventListener('DOMContentLoaded', function () {
                     data.beneficiarios.forEach(row => {
                         const estado = row.activo ? 'Activo' : 'Inactivo';
                         const statusClass = row.activo ? 'paid' : 'pending';
-                        const html = `<div data-id='${row.id_usuario}' data-barrio='${row.barrio}' class='card-wrapper beneficiary-row'>
-                        <div class='beneficiary-card'>
-                            <div class='card-body'>
-                                <div class='card-item'>
-                                    <div class='card-label'># Beneficiario</div>
-                                    <div class='card-value'>${row.id_usuario}</div>
+                        const html = `<div data-id="${row.id_usuario}" data-barrio="${row.barrio}" class="card-wrapper beneficiary-row">
+                        <div class="beneficiary-card">
+                            <div class="card-body">
+                                <div class="card-item">
+                                    <div class="card-label">Contrato</div>
+                                    <div class="card-value card-contrato">${row.no_contrato}</div>
                                 </div>
-                                <div class='card-item'>
-                                    <div class='card-label'><i class='fas fa-user'></i> Nombre</div>
-                                    <div class='card-value beneficiary-name' style='color: #000000;'>${row.nombre}</div>
+                                <div class="card-item">
+                                    <div class="card-label"><i class="fas fa-user"></i> Nombre</div>
+                                    <div class="card-value beneficiary-name">${row.nombre}</div>
                                 </div>
-                                <div class='card-item'>
-                                    <div class='card-label'><i class='fas fa-map-marker-alt'></i> Calle, Barrio</div>
-                                    <div class='card-value'>${row.calle}, ${row.barrio}</div>
+                                <div class="card-item">
+                                    <div class="card-label"><i class="fas fa-tachometer-alt"></i> Medidor</div>
+                                    <div class="card-value beneficiary-medidor">${row.no_medidor}</div>
                                 </div>
-                                <div class='card-item'>
-                                    <div class='card-label'>Contrato</div>
-                                    <div class='card-value'>${row.no_contrato}</div>
+                                <div class="card-item">
+                                    <div class="card-label"><i class="fas fa-map-marker-alt"></i> Calle, Barrio</div>
+                                    <div class="card-value">${row.calle}, ${row.barrio}</div>
                                 </div>
-                                <div class='card-item'>
-                                    <div class='card-label'><i class='fas fa-tachometer-alt'></i> Medidor</div>
-                                    <div class='card-value beneficiary-medidor' style='color: #000000;'>${row.no_medidor}</div>
+                                <div class="card-item">
+                                    <div class="card-label">Fecha Alta</div>
+                                    <div class="card-value">${row.fecha_alta}</div>
                                 </div>
-                                <div class='card-item'>
-                                    <div class='card-label'>Fecha Alta</div>
-                                    <div class='card-value'>${row.fecha_alta}</div>
+                                <div class="card-item">
+                                    <div class="card-label">Estado</div>
+                                    <div class="card-value"><span class="status ${statusClass}">${estado}</span></div>
                                 </div>
-                                <div class='card-item'>
-                                    <div class='card-label'>Estado</div>
-                                    <div class='card-value'><span class='status ${statusClass}'>${estado}</span></div>
+                                <div class="card-item">
+                                    <div class="card-label"># Beneficiario</div>
+                                    <div class="card-value">${row.id_usuario}</div>
                                 </div>
                             </div>
                         </div>
-                        <div class='card-actions-external'>
-                            <button class='btn-view' data-id='${row.id_usuario}' title='Ver detalles'><i class='fas fa-eye'></i></button>
-                            <button class='btn-edit' data-id='${row.id_usuario}' title='Editar'><i class='fas fa-edit'></i></button>
-                            <button class='btn-delete' data-id='${row.id_usuario}' title='Eliminar'><i class='fas fa-trash'></i></button>
+                        <div class="card-actions-external">
+                            <button class="btn-view" data-id="${row.id_usuario}" title="Ver detalles"><i class="fas fa-eye"></i></button>
+                            <button class="btn-edit" data-id="${row.id_usuario}" title="Editar"><i class="fas fa-edit"></i></button>
+                            <button class="btn-delete" data-id="${row.id_usuario}" title="Eliminar"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>`;
                         container.insertAdjacentHTML('beforeend', html);
                     });
                     currentPage = data.page;
                     totalPages = Math.ceil(data.total / data.limit);
-                    document.getElementById('pageInfo').textContent = totalPages > 0 ? `Página ${currentPage} de ${totalPages}` : 'No hay beneficiarios';
+                    let pageInfoText = '';
+                    if (searchTerm || calle || barrio) {
+                        pageInfoText = `Resultados: ${data.total} encontrados - Página ${currentPage} de ${totalPages}`;
+                    } else {
+                        pageInfoText = totalPages > 0 ? `Página ${currentPage} de ${totalPages}` : 'No hay beneficiarios';
+                    }
+                    document.getElementById('pageInfo').textContent = pageInfoText;
                     document.getElementById('prevPage').disabled = currentPage <= 1;
                     document.getElementById('nextPage').disabled = currentPage >= totalPages;
                     document.querySelector('.pagination').style.display = totalPages > 0 ? 'flex' : 'none';
                     if (data.beneficiarios.length === 0) {
-                        container.innerHTML = '<div class="no-results">No hay beneficiarios registrados</div>';
+                        let noResultsMsg = 'No se encontraron beneficiarios';
+                        if (searchTerm) noResultsMsg += ' que coincidan con la búsqueda';
+                        if (calle) noResultsMsg += ` en la calle ${calle}`;
+                        if (barrio) noResultsMsg += ` en el barrio ${barrio}`;
+                        container.innerHTML = `<div class="no-results">${noResultsMsg}</div>`;
                     }
                 } else {
                     showModal('Error', 'No se pudieron cargar los beneficiarios', 'error');
@@ -161,74 +179,142 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById(tab + 'Section').style.display = 'block';
             localStorage.setItem('activeTab', tab);
             if (tab === 'list') {
-                loadBeneficiaries(currentPage);
+                // Resetear búsqueda y filtros al cambiar de pestaña
+                currentSearchTerm = '';
+                currentCalle = '';
+                currentBarrio = '';
+                if (searchInput) searchInput.value = '';
+                if (streetFilter) streetFilter.value = '';
+                if (barrioFilter) barrioFilter.value = '';
+                if (btnClearSearch) btnClearSearch.style.display = 'none';
+                loadBeneficiaries(currentPage, currentSearchTerm, currentCalle, currentBarrio);
             }
         });
     });
 
-    const savedTab = localStorage.getItem('activeTab') || 'list';
-    if (document.querySelector(`[data-tab="${savedTab}"]`)) {
-        document.querySelector(`[data-tab="${savedTab}"]`).click();
+    // Check for URL parameter first
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+
+    let activeTab = 'list';
+
+    if (tabParam && document.querySelector(`[data-tab="${tabParam}"]`)) {
+        activeTab = tabParam;
+    } else {
+        activeTab = localStorage.getItem('activeTab') || 'list';
+    }
+
+    if (document.querySelector(`[data-tab="${activeTab}"]`)) {
+        document.querySelector(`[data-tab="${activeTab}"]`).click();
     } else {
         document.querySelector('[data-tab="list"]').click();
     }
-    // Redundant loadBeneficiaries call removed
 
     // --- Search & Filter Logic ---
-    function filterBeneficiaries() {
-        const searchValue = searchInput ? searchInput.value.toLowerCase().trim() : '';
-        const streetValue = streetFilter ? streetFilter.value : '';
-        const barrioValue = barrioFilter ? barrioFilter.value : '';
-        const rows = document.querySelectorAll('.beneficiary-row');
-        let visibleCount = 0;
+    // Nueva función de búsqueda que busca en toda la base de datos
+    function performSearch() {
+        const searchValue = searchInput ? searchInput.value.trim() : '';
 
         if (btnClearSearch) btnClearSearch.style.display = searchValue.length > 0 ? 'flex' : 'none';
 
-        rows.forEach(row => {
-            const name = row.querySelector('.beneficiary-name').textContent.toLowerCase();
-            const streetAndBarrio = row.querySelector('.card-item:nth-child(3) .card-value').textContent.trim();
-            const street = streetAndBarrio.split(',')[0].trim().toLowerCase();
-            const barrio = row.getAttribute('data-barrio') || '';
-            const medidor = row.querySelector('.beneficiary-medidor').textContent.toLowerCase();
-            const matchesSearch = name.includes(searchValue) || medidor.includes(searchValue);
-            const matchesStreet = streetValue === '' || street.includes(streetValue.toLowerCase());
-            const matchesBarrio = barrioValue === '' || barrio.toLowerCase().includes(barrioValue.toLowerCase());
-            const matchesFilter = barrioValue !== '' ? (matchesSearch && matchesBarrio) : (matchesSearch && matchesStreet);
+        // Actualizar el término de búsqueda actual
+        currentSearchTerm = searchValue;
 
-            if (matchesFilter) {
-                row.style.display = '';
-                visibleCount++;
-            } else {
-                row.style.display = 'none';
-            }
-        });
+        // Resetear a la página 1 cuando se hace una nueva búsqueda
+        currentPage = 1;
 
-        const noResults = document.getElementById('noSearchResults');
-        const noResultsRow = document.getElementById('noResultsRow');
-        if (visibleCount === 0 && rows.length > 0) {
-            if (noResults) noResults.style.display = 'block';
-            if (noResultsRow) noResultsRow.style.display = 'none';
-        } else {
-            if (noResults) noResults.style.display = 'none';
-            if (noResultsRow && rows.length === 0) noResultsRow.style.display = 'block';
-        }
+        // Cargar beneficiarios con el término de búsqueda y filtros actuales
+        loadBeneficiaries(currentPage, currentSearchTerm, currentCalle, currentBarrio);
 
-        const titleElement = document.querySelector('.table-title');
-        if (titleElement) {
-            if (barrioValue !== '') titleElement.textContent = `Lista de Beneficiarios: ${barrioValue}`;
-            else if (streetValue !== '') titleElement.textContent = `Lista de Beneficiarios: ${streetValue}`;
-            else titleElement.textContent = 'Lista de Beneficiarios';
-        }
+        // Actualizar el título
+        updateTitle();
     }
 
-    if (searchInput) searchInput.addEventListener('input', filterBeneficiaries);
-    if (streetFilter) streetFilter.addEventListener('change', () => { barrioFilter.value = ''; filterBeneficiaries(); });
-    if (barrioFilter) barrioFilter.addEventListener('change', () => { streetFilter.value = ''; filterBeneficiaries(); });
-    if (btnClearSearch) btnClearSearch.addEventListener('click', () => { searchInput.value = ''; filterBeneficiaries(); });
+    // Función para actualizar el título según los filtros activos
+    function updateTitle() {
+        const titleElement = document.querySelector('.table-title');
+        if (!titleElement) return;
 
-    // Pagination
-    document.getElementById('prevPage').addEventListener('click', () => { if (currentPage > 1) loadBeneficiaries(currentPage - 1); });
-    document.getElementById('nextPage').addEventListener('click', () => { if (currentPage < totalPages) loadBeneficiaries(currentPage + 1); });
+        let title = 'Lista de Beneficiarios';
+        const filters = [];
+
+        if (currentSearchTerm) filters.push(`Búsqueda: "${currentSearchTerm}"`);
+        if (currentCalle) filters.push(`Calle: ${currentCalle}`);
+        if (currentBarrio) filters.push(`Barrio: ${currentBarrio}`);
+
+        if (filters.length > 0) {
+            title = filters.join(' | ');
+        }
+
+        titleElement.textContent = title;
+    }
+
+    // Función de filtro por calle que busca en toda la base de datos
+    function filterByStreet() {
+        const streetValue = streetFilter ? streetFilter.value : '';
+
+        // Actualizar filtro actual
+        currentCalle = streetValue;
+        currentBarrio = ''; // Limpiar filtro de barrio
+        if (barrioFilter) barrioFilter.value = '';
+
+        // Resetear a la página 1
+        currentPage = 1;
+
+        // Cargar beneficiarios con el filtro de calle
+        loadBeneficiaries(currentPage, currentSearchTerm, currentCalle, currentBarrio);
+
+        // Actualizar el título
+        updateTitle();
+    }
+
+    // Función de filtro por barrio que busca en toda la base de datos
+    function filterByBarrio() {
+        const barrioValue = barrioFilter ? barrioFilter.value : '';
+
+        // Actualizar filtro actual
+        currentBarrio = barrioValue;
+        currentCalle = ''; // Limpiar filtro de calle
+        if (streetFilter) streetFilter.value = '';
+
+        // Resetear a la página 1
+        currentPage = 1;
+
+        // Cargar beneficiarios con el filtro de barrio
+        loadBeneficiaries(currentPage, currentSearchTerm, currentCalle, currentBarrio);
+
+        // Actualizar el título
+        updateTitle();
+    }
+
+    // Event listener para búsqueda con debounce (esperar 300ms después de que el usuario deje de escribir)
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            // Limpiar timeout anterior
+            if (searchTimeout) clearTimeout(searchTimeout);
+
+            // Mostrar indicador de carga en el input
+            searchInput.classList.add('searching');
+
+            // Establecer nuevo timeout
+            searchTimeout = setTimeout(() => {
+                performSearch();
+                searchInput.classList.remove('searching');
+            }, 300); // Esperar 300ms después de que el usuario deje de escribir
+        });
+    }
+
+    if (streetFilter) streetFilter.addEventListener('change', filterByStreet);
+    if (barrioFilter) barrioFilter.addEventListener('change', filterByBarrio);
+    if (btnClearSearch) btnClearSearch.addEventListener('click', () => {
+        searchInput.value = '';
+        currentSearchTerm = '';
+        performSearch();
+    });
+
+    // Pagination - ahora respeta el término de búsqueda y filtros
+    document.getElementById('prevPage').addEventListener('click', () => { if (currentPage > 1) loadBeneficiaries(currentPage - 1, currentSearchTerm, currentCalle, currentBarrio); });
+    document.getElementById('nextPage').addEventListener('click', () => { if (currentPage < totalPages) loadBeneficiaries(currentPage + 1, currentSearchTerm, currentCalle, currentBarrio); });
 
     // --- Modal Functions ---
     // Wrapper to unify style: Use Toast for info/success/error, Modal for Warning/Confirm
@@ -695,8 +781,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Real-time validation for edit form
     if (editName) editName.addEventListener('input', function () { if (this.value.trim().length < 3) mostrarError(this, 'Mínimo 3 caracteres'); else quitarError(this); });
-    if (editContract) editContract.addEventListener('input', function () { if (this.value.trim() === '' || isNaN(this.value)) mostrarError(this, 'Inválido'); else quitarError(this); });
-    if (editMeter) editMeter.addEventListener('input', function () { if (this.value.trim() === '' || isNaN(this.value)) mostrarError(this, 'Inválido'); else quitarError(this); });
+    // Contrato y medidor ya no son obligatorios, solo validar si tienen valor
+    if (editContract) editContract.addEventListener('input', function () { quitarError(this); });
+    if (editMeter) editMeter.addEventListener('input', function () { quitarError(this); });
     if (editStreet) editStreet.addEventListener('change', function () { if (this.value.trim() === '') mostrarError(this, 'Requerido'); else quitarError(this); });
 
     if (editForm) {
@@ -712,11 +799,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            // Validate fields
+            // Validate fields - solo nombre y calle son obligatorios
             let v = true;
             if (editName.value.trim().length < 3) { mostrarError(editName, 'Inválido'); v = false; }
-            if (editContract.value.trim() === '' || isNaN(editContract.value)) { mostrarError(editContract, 'Inválido'); v = false; }
-            if (editMeter.value.trim() === '' || isNaN(editMeter.value)) { mostrarError(editMeter, 'Inválido'); v = false; }
             if (editStreet.value.trim() === '') { mostrarError(editStreet, 'Requerido'); v = false; }
             if (!v) return;
 
@@ -783,6 +868,25 @@ document.addEventListener('DOMContentLoaded', function () {
     function quitarError(c) {
         c.style.borderColor = '#ddd'; c.style.boxShadow = 'none';
         const s = c.parentElement.querySelector('.error-message'); if (s) s.textContent = '';
+        const w = c.parentElement.querySelector('.warning-message'); if (w) w.textContent = '';
+    }
+
+    function mostrarAdvertencia(c, m) {
+        c.style.borderColor = '#ff9800'; c.style.boxShadow = '0 0 0 3px rgba(255,152,0,0.1)';
+        // Quitar mensaje de error si existe
+        const e = c.parentElement.querySelector('.error-message');
+        if (e) e.textContent = '';
+
+        let s = c.parentElement.querySelector('.warning-message');
+        if (!s) {
+            s = document.createElement('span');
+            s.className = 'warning-message';
+            s.style.color = '#ff9800';
+            s.style.fontSize = '0.8rem';
+            s.style.fontWeight = 'bold';
+            c.parentElement.appendChild(s);
+        }
+        s.textContent = '⚠️ ' + m;
     }
 
     function inicializarCallesYBarrios() {
@@ -813,9 +917,86 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (document.getElementById('registrationDate')) document.getElementById('registrationDate').value = new Date().toISOString().split('T')[0];
 
-    // Real-time validation
-    if (inCon) inCon.addEventListener('input', function () { if (this.value.trim() === '' || isNaN(this.value)) mostrarError(this, 'Inválido'); else quitarError(this); });
-    if (inMed) inMed.addEventListener('input', function () { if (this.value.trim() === '' || isNaN(this.value)) mostrarError(this, 'Inválido'); else quitarError(this); });
+    // Real-time validation con verificación de duplicados
+    let contratoTimeout, medidorTimeout;
+
+    if (inCon) {
+        inCon.addEventListener('input', function () {
+            // Limpiar timeout anterior
+            clearTimeout(contratoTimeout);
+
+            // Validar longitud (1-4 dígitos)
+            const valor = this.value.trim();
+            if (valor !== '') {
+                if (!/^\d+$/.test(valor)) {
+                    mostrarError(this, 'Solo números');
+                    return;
+                } else if (valor.length > 4) {
+                    mostrarError(this, 'Máximo 4 dígitos');
+                    return;
+                } else {
+                    quitarError(this);
+                }
+
+                // Verificar duplicados después de 500ms
+                contratoTimeout = setTimeout(() => {
+                    fetch(`../controladores/beneficiarios.php?action=check_duplicate&tipo=contrato&valor=${encodeURIComponent(this.value)}`)
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success && data.exists) {
+                                mostrarAdvertencia(inCon, `Ya registrado para: ${data.beneficiario}`);
+                            } else {
+                                quitarError(inCon);
+                            }
+                        })
+                        .catch(() => { });
+                }, 500);
+            } else {
+                quitarError(this);
+            }
+        });
+    }
+
+    if (inMed) {
+        inMed.addEventListener('input', function () {
+            // Limpiar timeout anterior
+            clearTimeout(medidorTimeout);
+
+            // Validar longitud (exactamente 8 dígitos)
+            const valor = this.value.trim();
+            if (valor !== '') {
+                if (!/^\d+$/.test(valor)) {
+                    mostrarError(this, 'Solo números');
+                    return;
+                } else if (valor.length < 8) {
+                    mostrarError(this, 'Debe tener 8 dígitos');
+                    return;
+                } else if (valor.length > 8) {
+                    mostrarError(this, 'Máximo 8 dígitos');
+                    return;
+                } else {
+                    quitarError(this);
+                }
+
+                // Verificar duplicados después de 500ms
+                medidorTimeout = setTimeout(() => {
+                    fetch(`../controladores/beneficiarios.php?action=check_duplicate&tipo=medidor&valor=${encodeURIComponent(this.value)}`)
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success && data.exists) {
+                                mostrarAdvertencia(inMed, `Ya registrado para: ${data.beneficiario}`);
+                            } else {
+                                quitarError(inMed);
+                            }
+                        })
+                        .catch(() => { });
+                }, 500);
+            } else {
+                quitarError(this);
+            }
+        });
+    }
+
     if (inNom) inNom.addEventListener('input', function () { if (this.value.length < 3) mostrarError(this, 'Mínimo 3 caracteres'); else quitarError(this); });
     if (inCal) inCal.addEventListener('input', function () { if (this.value.trim() === '') mostrarError(this, 'Requerido'); else quitarError(this); });
 
@@ -823,8 +1004,8 @@ document.addEventListener('DOMContentLoaded', function () {
         formAdd.addEventListener('submit', function (e) {
             e.preventDefault();
             let v = true;
-            if (inCon.value.trim() === '' || isNaN(inCon.value)) { mostrarError(inCon, 'Inválido'); v = false; }
-            if (inMed.value.trim() === '' || isNaN(inMed.value)) { mostrarError(inMed, 'Inválido'); v = false; }
+
+            // Solo validar campos obligatorios: nombre y calle
             if (inNom.value.trim().length < 3) { mostrarError(inNom, 'Inválido'); v = false; }
             if (inCal.value.trim() === '') { mostrarError(inCal, 'Requerido'); v = false; }
 
@@ -838,11 +1019,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 .then(d => {
                     mostrarLoading(false);
                     if (d.success) {
-                        showModal('Éxito', 'Guardado correctamente', 'success');
+                        let mensaje = 'Beneficiario guardado correctamente';
+                        if (d.warnings && d.warnings.length > 0) {
+                            mensaje += '\n\nAdvertencias:\n' + d.warnings.join('\n');
+                        }
+                        showModal('Éxito', mensaje.replace(/\n/g, '<br>'), 'success');
                         formAdd.reset();
                         [inCon, inMed, inNom, inCal].forEach(quitarError);
-                        localStorage.setItem('activeTab', 'list');
-                        setTimeout(() => location.reload(), 1500);
+                        // Mantener al usuario en el formulario de agregar
+                        // NO cambiar de pestaña ni recargar
                     } else showModal('Error', d.message || 'Error', 'error');
                 })
                 .catch(e => { mostrarLoading(false); showModal('Error', e.message, 'error'); });

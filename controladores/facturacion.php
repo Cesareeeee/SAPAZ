@@ -1,28 +1,10 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
-// Desactivar visualización de errores directos para no romper el JSON
-ini_set('display_errors', 0);
-error_reporting(E_ALL);
-
 require_once '../includes/conexion.php';
 
-// --- Verificación y Actualización de Esquema DB ---
-// Consolidado para evitar múltiples queries y posibles errores de salida
+// Ensure table exists (Facturas)
 $checkTable = $conn->query("SHOW TABLES LIKE 'facturas'");
-if ($checkTable->num_rows > 0) {
-    // Verificar columna id_usuario_registro
-    $checkCol = $conn->query("SHOW COLUMNS FROM facturas LIKE 'id_usuario_registro'");
-    if ($checkCol->num_rows == 0) {
-        $conn->query("ALTER TABLE facturas ADD COLUMN id_usuario_registro VARCHAR(100) NULL AFTER estado");
-    } else {
-        $colInfo = $checkCol->fetch_assoc();
-        // Si no es un tipo de texto (como si fuera INT), lo convertimos a VARCHAR para guardar el nombre
-        if (strpos(strtolower($colInfo['Type']), 'varchar') === false && strpos(strtolower($colInfo['Type']), 'text') === false) {
-            $conn->query("ALTER TABLE facturas MODIFY COLUMN id_usuario_registro VARCHAR(100) NULL");
-        }
-    }
-} else {
-    // Crear tabla si no existe
+if ($checkTable->num_rows == 0) {
     $sql = "CREATE TABLE facturas (
         id_factura INT AUTO_INCREMENT PRIMARY KEY,
         id_usuario INT NOT NULL,
@@ -35,7 +17,21 @@ if ($checkTable->num_rows > 0) {
         INDEX (id_usuario),
         INDEX (id_lectura)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
-    $conn->query($sql);
+    if (!$conn->query($sql)) {
+        die(json_encode(['success' => false, 'message' => 'Error DB Schema Facturas: ' . $conn->error]));
+    }
+} else {
+    // Verificar si la columna id_usuario_registro existe y su tipo
+    $checkCol = $conn->query("SHOW COLUMNS FROM facturas LIKE 'id_usuario_registro'");
+    if ($checkCol->num_rows == 0) {
+        $conn->query("ALTER TABLE facturas ADD COLUMN id_usuario_registro VARCHAR(100) NULL AFTER estado");
+    } else {
+        // Asegurar que sea VARCHAR para que guarde el nombre y no lo convierta a 0 (si fuera INT)
+        $colInfo = $checkCol->fetch_assoc();
+        if (strpos(strtolower($colInfo['Type']), 'varchar') === false) {
+            $conn->query("ALTER TABLE facturas MODIFY COLUMN id_usuario_registro VARCHAR(100) NULL");
+        }
+    }
 }
 
 // Ensure table exists (Configuracion)
@@ -45,7 +41,10 @@ if ($checkConfig->num_rows == 0) {
         clave VARCHAR(50) PRIMARY KEY,
         valor TEXT
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
-    $conn->query($sqlConfig);
+    if (!$conn->query($sqlConfig)) {
+        die(json_encode(['success' => false, 'message' => 'Error DB Schema Config: ' . $conn->error]));
+    }
+    // Insert default rate
     $conn->query("INSERT INTO configuracion (clave, valor) VALUES ('tarifa_m3', '10.00')");
 }
 
@@ -57,19 +56,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if ($action === 'get_rate') {
         $res = $conn->query("SELECT clave, valor FROM configuracion WHERE clave IN ('tarifa_m3', 'tarifa_excedente')");
         $rate = 10.00;
-        $rateExcess = 15.00;
+        $rateExcess = 15.00; // Default excess rate
         
         while ($row = $res->fetch_assoc()) {
             if ($row['clave'] === 'tarifa_m3') $rate = floatval($row['valor']);
             if ($row['clave'] === 'tarifa_excedente') $rateExcess = floatval($row['valor']);
         }
         
-        echo json_encode(['success' => true, 'rate' => $rate, 'rate_excess' => $rateExcess]);
+        echo json_encode([
+            'success' => true, 
+            'rate' => $rate,
+            'rate_excess' => $rateExcess
+        ]);
         exit;
     }
 
     if ($action === 'search_users') {
         $q = $_GET['q'] ?? '';
+        // Buscar usuarios e incluir la fecha de la lectura pendiente más antigua
         $sql = "SELECT u.id_usuario, u.nombre, u.no_contrato, u.no_medidor,
                 (SELECT fecha_lectura FROM lecturas l 
                  WHERE l.id_usuario = u.id_usuario 
@@ -85,10 +89,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $stmt->execute();
         $res = $stmt->get_result();
         $users = [];
-        $meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
         while ($r = $res->fetch_assoc()) {
             if ($r['mes_pendiente']) {
+                // Formatear mes para visualización (solo Mes Año)
                 $date = new DateTime($r['mes_pendiente']);
+                setlocale(LC_TIME, 'es_ES.UTF-8', 'es_MX.UTF-8', 'es_ES'); // Intentar configurar locale
+                // Fallback manual de meses si locale falla
+                $meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
                 $mesIndex = intval($date->format('m')) - 1;
                 $r['mes_texto'] = $meses[$mesIndex] . ' ' . $date->format('Y');
             } else {
@@ -102,6 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     if ($action === 'get_pending_readings') {
         $id_usuario = intval($_GET['id_usuario']);
+        // Get ALL readings that are NOT billed
         $sql = "SELECT l.* FROM lecturas l 
                 WHERE l.id_usuario = ? 
                 AND l.id_lectura NOT IN (SELECT id_lectura FROM facturas WHERE id_lectura IS NOT NULL AND estado != 'Cancelado')
@@ -111,8 +119,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $stmt->execute();
         $res = $stmt->get_result();
         $readings = [];
-        while ($r = $res->fetch_assoc()) $readings[] = $r;
-        echo json_encode(['success' => true, 'readings' => $readings, 'count' => count($readings)]);
+        while ($r = $res->fetch_assoc()) {
+            $readings[] = $r;
+        }
+        if (count($readings) > 0) {
+            echo json_encode(['success' => true, 'readings' => $readings, 'count' => count($readings)]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'No pending readings']);
+        }
         exit;
     }
 
@@ -136,6 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     if ($action === 'get_single_invoice') {
         $id_factura = intval($_GET['id_factura']);
+        // Join with usuarios to get details
         $sql = "SELECT f.*, us.nombre, us.no_contrato, us.no_medidor, l.consumo_m3, l.fecha_lectura, f.id_usuario_registro 
                 FROM facturas f
                 JOIN usuarios_servicio us ON f.id_usuario = us.id_usuario
@@ -171,14 +186,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     if ($action === 'get_invoices') {
         $id_usuario = isset($_GET['id_usuario']) ? intval($_GET['id_usuario']) : null;
+        
         $sql = "SELECT f.*, us.nombre, us.no_medidor, l.fecha_lectura, l.consumo_m3, f.id_usuario_registro
                 FROM facturas f 
                 JOIN usuarios_servicio us ON f.id_usuario = us.id_usuario 
                 LEFT JOIN lecturas l ON f.id_lectura = l.id_lectura ";
-        if ($id_usuario) { $sql .= "WHERE f.id_usuario = ? "; }
+        
+        if ($id_usuario) {
+            $sql .= "WHERE f.id_usuario = ? ";
+        }
         $sql .= "ORDER BY f.fecha_emision DESC LIMIT 100";
+        
         $stmt = $conn->prepare($sql);
-        if ($id_usuario) { $stmt->bind_param("i", $id_usuario); }
+        if ($id_usuario) {
+            $stmt->bind_param("i", $id_usuario);
+        }
         $stmt->execute();
         $res = $stmt->get_result();
         $invoices = [];
@@ -194,17 +216,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'update_rate') {
         $rate = floatval($_POST['rate']);
         $rateExcess = isset($_POST['rate_excess']) ? floatval($_POST['rate_excess']) : 0;
+        
         if ($rate > 0) {
             $stmt = $conn->prepare("INSERT INTO configuracion (clave, valor) VALUES ('tarifa_m3', ?) ON DUPLICATE KEY UPDATE valor = ?");
             $rateStr = strval($rate);
             $stmt->bind_param("ss", $rateStr, $rateStr);
             $stmt->execute();
+            
             if ($rateExcess >= 0) {
                 $stmtExcess = $conn->prepare("INSERT INTO configuracion (clave, valor) VALUES ('tarifa_excedente', ?) ON DUPLICATE KEY UPDATE valor = ?");
                 $rateExcessStr = strval($rateExcess);
                 $stmtExcess->bind_param("ss", $rateExcessStr, $rateExcessStr);
                 $stmtExcess->execute();
             }
+            
             echo json_encode(['success' => true]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Invalid rate']);
@@ -222,7 +247,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("iids", $id_usuario, $id_lectura, $monto, $registrado_por);
         
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'id' => $stmt->insert_id, 'registrado_por' => $registrado_por]);
+            echo json_encode(['success' => true, 'id' => $stmt->insert_id]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error DB: ' . $conn->error]);
         }
@@ -243,6 +268,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'revert_payment') {
         $id_factura = intval($_POST['id_factura']);
+        // Validar permisos adicionales aquí si fuera necesario
         $stmt = $conn->prepare("UPDATE facturas SET estado = 'Pendiente' WHERE id_factura = ?");
         $stmt->bind_param("i", $id_factura);
         if ($stmt->execute()) {

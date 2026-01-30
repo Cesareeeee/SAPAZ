@@ -1,4 +1,7 @@
-<?php require_once '../includes/validar_sesion.php'; ?>
+<?php 
+require_once '../includes/validar_sesion.php';
+require_once '../includes/validar_admin.php';
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>

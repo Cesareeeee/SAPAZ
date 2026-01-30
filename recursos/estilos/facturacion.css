@@ -370,7 +370,7 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 10px;
     margin-top: 5px;
-    max-height: 200px;
+    max-height: 450px;
     overflow-y: auto;
     z-index: 50;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
@@ -431,7 +431,7 @@ body {
     gap: 1rem;
     margin-top: 0.5rem;
     padding: 0.5rem;
-    max-height: 400px;
+    max-height: 500px;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: #cbd5e1 transparent;
@@ -786,7 +786,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 1.5rem;
+    padding: 0.75rem 1.25rem;
     background: #ffffff;
     border: 1px solid var(--border-color);
     border-radius: 12px;

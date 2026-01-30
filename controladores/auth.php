@@ -22,42 +22,42 @@ try {
 
         if ($action === 'login') {
             $usuario = $conn->real_escape_string($data['usuario'] ?? '');
-            $password = $data['password'] ?? '';
-            $remember_me = isset($data['remember_me']) && $data['remember_me'] === 'true';
+            $contrasena = $data['password'] ?? '';
+            $recordar_sesion = isset($data['remember_me']) && $data['remember_me'] === 'true';
 
-            if (empty($usuario) || empty($password)) {
+            if (empty($usuario) || empty($contrasena)) {
                 echo json_encode(['success' => false, 'message' => 'Por favor ingrese usuario y contraseña']);
                 exit;
             }
 
             $sql = "SELECT * FROM usuarios_sistema WHERE usuario = '$usuario' LIMIT 1";
-            $result = $conn->query($sql);
+            $resultado = $conn->query($sql);
 
-            if ($result && $result->num_rows > 0) {
-                $user = $result->fetch_assoc();
-                // Verify password (using 'contrasena' column)
-                if (password_verify($password, $user['contrasena'])) {
-                    // Set session
-                    $_SESSION['user_id'] = $user['id_usuario_sistema'];
-                    $_SESSION['usuario'] = $user['usuario'];
-                    $_SESSION['rol'] = $user['rol'];
-                    $_SESSION['nombre_completo'] = $user['nombre'];
+            if ($resultado && $resultado->num_rows > 0) {
+                $usuario_datos = $resultado->fetch_assoc();
+                // Verificar contraseña (usando columna 'contrasena')
+                if (password_verify($contrasena, $usuario_datos['contrasena'])) {
+                    // Establecer sesión
+                    $_SESSION['user_id'] = $usuario_datos['id_usuario_sistema'];
+                    $_SESSION['usuario'] = $usuario_datos['usuario'];
+                    $_SESSION['rol'] = $usuario_datos['rol'];
+                    $_SESSION['nombre_completo'] = $usuario_datos['nombre'];
                     
-                    // If remember me is checked, extend session lifetime
-                    if ($remember_me) {
-                        // Set session to last 30 days
+                    // Si "recordar sesión" está marcado, extender duración de sesión
+                    if ($recordar_sesion) {
+                        // Establecer sesión para durar 30 días
                         $_SESSION['remember_me'] = true;
-                        ini_set('session.gc_maxlifetime', 30 * 24 * 60 * 60); // 30 days
-                        session_set_cookie_params(30 * 24 * 60 * 60); // 30 days
+                        ini_set('session.gc_maxlifetime', 30 * 24 * 60 * 60); // 30 días
+                        session_set_cookie_params(30 * 24 * 60 * 60); // 30 días
                     } else {
-                        // Normal session (expires when browser closes)
+                        // Sesión normal (expira cuando se cierra el navegador)
                         $_SESSION['remember_me'] = false;
                     }
 
                     echo json_encode([
                         'success' => true, 
-                        'message' => 'Inicio de sesión exitoso. Bienvenido ' . $user['nombre'] . ' (' . $user['rol'] . ')',
-                        'redirect' => '../vistas/lecturas.php'
+                        'message' => 'Inicio de sesión exitoso. Bienvenido ' . $usuario_datos['nombre'] . ' (' . $usuario_datos['rol'] . ')',
+                        'redirect' => '../vistas/inicio.php'
                     ]);
                 } else {
                     echo json_encode(['success' => false, 'message' => 'Contraseña incorrecta']);
@@ -71,28 +71,28 @@ try {
         if ($action === 'register') {
             $nombre = $conn->real_escape_string($data['nombre_completo'] ?? '');
             $usuario = $conn->real_escape_string($data['usuario'] ?? '');
-            $password = $data['password'] ?? '';
-            // Convert role to uppercase to match ENUM('ADMIN', 'LECTURISTA')
+            $contrasena = $data['password'] ?? '';
+            // Convertir rol a mayúsculas para coincidir con ENUM('ADMIN', 'LECTURISTA')
             $rol = strtoupper($conn->real_escape_string($data['rol'] ?? 'lecturista'));
 
-            if (empty($nombre) || empty($usuario) || empty($password) || empty($rol)) {
+            if (empty($nombre) || empty($usuario) || empty($contrasena) || empty($rol)) {
                 echo json_encode(['success' => false, 'message' => 'Todos los campos son obligatorios']);
                 exit;
             }
 
-            // Check if user exists
-            $check = $conn->query("SELECT id_usuario_sistema FROM usuarios_sistema WHERE usuario = '$usuario'");
-            if ($check->num_rows > 0) {
+            // Verificar si el usuario ya existe
+            $verificar = $conn->query("SELECT id_usuario_sistema FROM usuarios_sistema WHERE usuario = '$usuario'");
+            if ($verificar->num_rows > 0) {
                 echo json_encode(['success' => false, 'message' => 'El nombre de usuario ya existe']);
                 exit;
             }
 
-            // High Security Password Hashing (Bcrypt with Cost 12)
-            $options = ['cost' => 12];
-            $hashed_password = password_hash($password, PASSWORD_BCRYPT, $options);
+            // Hash de contraseña de alta seguridad (Bcrypt con costo 12)
+            $opciones = ['cost' => 12];
+            $contrasena_hash = password_hash($contrasena, PASSWORD_BCRYPT, $opciones);
 
-            // Insert using correct column names: nombre, contrasena
-            $sql = "INSERT INTO usuarios_sistema (nombre, usuario, contrasena, rol, activo) VALUES ('$nombre', '$usuario', '$hashed_password', '$rol', 1)";
+            // Insertar usando nombres de columna correctos: nombre, contrasena
+            $sql = "INSERT INTO usuarios_sistema (nombre, usuario, contrasena, rol, activo) VALUES ('$nombre', '$usuario', '$contrasena_hash', '$rol', 1)";
 
             if ($conn->query($sql)) {
                 echo json_encode(['success' => true, 'message' => 'Usuario registrado correctamente']);

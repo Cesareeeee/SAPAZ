@@ -1,243 +1,236 @@
 <?php
+require('../recursos/libs/fpdf/fpdf.php');
 require_once '../includes/conexion.php';
 
 if (!isset($_GET['id_usuario'])) {
-    die("ID de usuario no especificado.");
+    die("Error: No se ha especificado un usuario.");
 }
 
 $id_usuario = intval($_GET['id_usuario']);
 
-// Obtener información del usuario
-$stmtInfo = $conn->prepare("
-    SELECT us.*, d.calle, d.barrio 
-    FROM usuarios_servicio us
-    LEFT JOIN domicilios d ON us.id_domicilio = d.id_domicilio
-    WHERE us.id_usuario = ?
-");
-$stmtInfo->bind_param("i", $id_usuario);
-$stmtInfo->execute();
-$userInfo = $stmtInfo->get_result()->fetch_assoc();
-
-if (!$userInfo) {
-    die("Usuario no encontrado.");
-}
-
-// Obtener historial completo
-$sql = "SELECT l.id_lectura, l.fecha_lectura, l.consumo_m3, l.lectura_anterior, l.lectura_actual, 
-               f.id_factura, f.monto_total, f.estado as estado_factura, f.fecha_emision
-        FROM lecturas l
-        LEFT JOIN facturas f ON l.id_lectura = f.id_lectura
-        WHERE l.id_usuario = ?
-        ORDER BY l.fecha_lectura DESC";
-
-$stmt = $conn->prepare($sql);
+// Obtener datos del usuario
+$sqlUsuario = "SELECT us.*, d.calle, d.barrio 
+               FROM usuarios_servicio us 
+               LEFT JOIN domicilios d ON us.id_domicilio = d.id_domicilio 
+               WHERE us.id_usuario = ?";
+$stmt = $conn->prepare($sqlUsuario);
 $stmt->bind_param("i", $id_usuario);
 $stmt->execute();
-$res = $stmt->get_result();
-$historial = [];
-while ($row = $res->fetch_assoc()) {
-    $historial[] = $row;
+$resUsuario = $stmt->get_result();
+$usuario = $resUsuario->fetch_assoc();
+
+if (!$usuario) {
+    die("Error: Usuario no encontrado.");
 }
 
+// Obtener tarifa base
+$sqlConfig = "SELECT valor FROM configuracion WHERE clave = 'tarifa_m3'";
+$resConfig = $conn->query($sqlConfig);
+$tarifaBase = '10.00'; // Default fallback
+if ($resConfig && $rowConfig = $resConfig->fetch_assoc()) {
+    $tarifaBase = $rowConfig['valor'];
+}
+
+// Obtener historial
+$sqlHistorial = "SELECT f.fecha_emision, f.id_factura, f.monto_total, f.estado,
+                 l.lectura_anterior, l.lectura_actual, l.consumo_m3
+                 FROM facturas f
+                 LEFT JOIN lecturas l ON f.id_lectura = l.id_lectura
+                 WHERE f.id_usuario = ?
+                 ORDER BY f.fecha_emision DESC
+                 LIMIT 50";
+$stmtH = $conn->prepare($sqlHistorial);
+$stmtH->bind_param("i", $id_usuario);
+$stmtH->execute();
+$resHistorial = $stmtH->get_result();
+$historial = [];
+while ($row = $resHistorial->fetch_assoc()) {
+    $historial[] = $row;
+}
+$stmtH->close();
+$stmt->close();
+$conn->close();
+
+class PDF extends FPDF {
+    function Header() {
+        // Logo (Ajustar ruta si es necesaria)
+        if (file_exists('../recursos/imagenes/SAPAZ.jpeg')) {
+            $this->Image('../recursos/imagenes/SAPAZ.jpeg', 10, 10, 20);
+        }
+        
+        $this->SetFont('Arial', 'B', 12);
+        $this->Cell(0, 10, mb_convert_encoding('COMITÉ DEL SISTEMA DE AGUA POTABLE Y ALCANTARILLADO', 'ISO-8859-1', 'UTF-8'), 0, 1, 'C');
+        $this->SetFont('Arial', 'B', 10);
+        $this->Cell(0, 5, 'HISTORIAL DE PAGOS Y CONSUMOS', 0, 1, 'C');
+        $this->Ln(10);
+    }
+
+    function Footer() {
+        $this->SetY(-15);
+        $this->SetFont('Arial', 'I', 8);
+        $this->Cell(0, 10, mb_convert_encoding('Página ', 'ISO-8859-1', 'UTF-8') . $this->PageNo() . '/{nb}', 0, 0, 'C');
+    }
+}
+
+$pdf = new PDF('P', 'mm', 'Letter');
+$pdf->AliasNbPages();
+$pdf->AddPage();
+$pdf->SetMargins(10, 10, 10);
+$pdf->SetAutoPageBreak(true, 20);
+
+// --- DATOS GENERALES ---
+$pdf->SetFont('Arial', 'B', 9);
+$pdf->SetFillColor(230, 230, 230);
+
+// Anchos de columna para Datos Generales (Total ~196)
+// Row 1: Contrato (30), Nombre (80), Tarifa (40), Diam (46)
+// Row 2: Medidor (30), Domicilio (80), Cuota (40), Clase (46)
+
+$pdf->Cell(30, 6, 'BENEFICIARIO', 1, 0, 'L', true);
+$pdf->SetFont('Arial', '', 9);
+$pdf->Cell(166, 6, mb_convert_encoding($usuario['nombre'], 'ISO-8859-1', 'UTF-8'), 1, 1, 'L');
+
+$pdf->SetFont('Arial', 'B', 9);
+$pdf->Cell(30, 6, 'No. CONTRATO', 1, 0, 'L', true);
+$pdf->SetFont('Arial', '', 9);
+$pdf->Cell(80, 6, $usuario['no_contrato'], 1, 0, 'L');
+$pdf->SetFont('Arial', 'B', 9);
+$pdf->Cell(40, 6, 'TARIFA', 1, 0, 'L', true);
+$pdf->SetFont('Arial', '', 9);
+$pdf->Cell(46, 6, '', 1, 1, 'L'); // Vacío
+
+$pdf->SetFont('Arial', 'B', 9);
+$pdf->Cell(30, 6, 'No. MEDIDOR', 1, 0, 'L', true);
+$pdf->SetFont('Arial', '', 9);
+$pdf->Cell(80, 6, $usuario['no_medidor'], 1, 0, 'L');
+$pdf->SetFont('Arial', 'B', 9);
+$pdf->Cell(40, 6, 'CUOTA FIJA $', 1, 0, 'L', true);
+$pdf->SetFont('Arial', '', 9);
+$pdf->Cell(46, 6, $tarifaBase, 1, 1, 'L');
+
+// Domicilio completo
+$domicilio = ($usuario['calle'] ?? '') . ', ' . ($usuario['barrio'] ?? '');
+$pdf->SetFont('Arial', 'B', 9);
+$pdf->Cell(30, 6, 'DOMICILIO', 1, 0, 'L', true);
+$pdf->SetFont('Arial', '', 8);
+$pdf->Cell(166, 6, mb_convert_encoding($domicilio, 'ISO-8859-1', 'UTF-8'), 1, 1, 'L');
+
+$pdf->Ln(5);
+
+// --- TABLA PRINCIPAL ---
+// Definición de anchos
+$wFecha = 25;
+$wRecibo = 20;
+// Servicio Medidor (3 cols)
+$wLecAnt = 18;
+$wLecAct = 18;
+$wConsumo = 18;
+// Movimientos (4 cols)
+$wCargos = 20;
+$wRecargos = 20;
+$wCreditos = 20;
+$wSaldo = 20;
+
+// Observaciones (Resto)
+// Total width usage so far: 25+20 + (18*3) + (20*4) = 45 + 54 + 80 = 179.
+// Page width ~196. Remaining: 17. Bit small for Obs. Let's adjust.
+// Reduce Subcols?
+// Fecha: 22, Recibo: 18 -> 40
+// Lecs: 15*3 = 45 -> 85
+// Movs: 18*4 = 72 -> 157
+// Obs: 196 - 157 = 39. Better.
+
+$wFecha = 22;
+$wRecibo = 18;
+$wLecAny = 15;
+$wLecAct = 15;
+$wConsum = 15;
+$wCargos = 18;
+$wRecarg = 18;
+$wCredit = 18;
+$wSaldo = 18;
+$wObs = 39;
+
+// Header Row 1
+$pdf->SetFont('Arial', 'B', 8);
+$pdf->SetFillColor(220, 220, 220); // Gris claro encabezado
+
+$x = $pdf->GetX();
+$y = $pdf->GetY();
+
+$pdf->Cell($wFecha, 10, 'FECHA', 1, 0, 'C', true);
+$pdf->Cell($wRecibo, 10, 'RECIBO', 1, 0, 'C', true);
+
+// Group Headers
+$pdf->Cell($wLecAny + $wLecAct + $wConsum, 5, 'SERVICIO POR MEDIDOR', 1, 0, 'C', true);
+$pdf->Cell($wCargos + $wRecarg + $wCredit + $wSaldo, 5, 'MOVIMIENTOS', 1, 0, 'C', true);
+
+// Observaciones
+$pdf->Cell($wObs, 10, 'OBSERVACIONES', 1, 0, 'C', true);
+
+// Go back and down to draw sub-rows
+$pdf->SetXY($x + $wFecha + $wRecibo, $y + 5);
+
+// Subheaders Row 2
+$pdf->Cell($wLecAny, 5, 'LEC. ANT.', 1, 0, 'C', true);
+$pdf->Cell($wLecAct, 5, 'LEC. ACT.', 1, 0, 'C', true);
+$pdf->Cell($wConsum, 5, 'M3', 1, 0, 'C', true);
+
+$pdf->Cell($wCargos, 5, 'CARGO', 1, 0, 'C', true);
+$pdf->Cell($wRecarg, 5, 'RECAR', 1, 0, 'C', true);
+$pdf->Cell($wCredit, 5, 'CRED', 1, 0, 'C', true);
+$pdf->Cell($wSaldo, 5, 'SALDO', 1, 0, 'C', true);
+
+$pdf->SetXY($x, $y + 10); // Reset for data
+
+// --- DATA ---
+$pdf->SetFont('Arial', '', 8);
+
+foreach ($historial as $row) {
+    $fecha = date('d/m/Y', strtotime($row['fecha_emision']));
+    $recibo = $row['id_factura'];
+    $lecAnt = $row['lectura_anterior'] ?? '-';
+    $lecAct = $row['lectura_actual'] ?? '-';
+    $consumo = $row['consumo_m3'] ?? '-';
+    $cargo = number_format($row['monto_total'], 2);
+    $recargo = '0.00'; // DB field?
+    $credito = '';
+    $saldo = '';
+    $obs = $row['estado'];
+
+    $pdf->Cell($wFecha, 6, $fecha, 1, 0, 'C');
+    $pdf->Cell($wRecibo, 6, $recibo, 1, 0, 'C');
+    
+    $pdf->Cell($wLecAny, 6, $lecAnt, 1, 0, 'C');
+    $pdf->Cell($wLecAct, 6, $lecAct, 1, 0, 'C');
+    $pdf->Cell($wConsum, 6, $consumo, 1, 0, 'C');
+    
+    $pdf->Cell($wCargos, 6, $cargo, 1, 0, 'R');
+    $pdf->Cell($wRecarg, 6, $recargo, 1, 0, 'R');
+    $pdf->Cell($wCredit, 6, $credito, 1, 0, 'R');
+    $pdf->Cell($wSaldo, 6, $saldo, 1, 0, 'R');
+    
+    $pdf->Cell($wObs, 6, mb_convert_encoding($obs, 'ISO-8859-1', 'UTF-8'), 1, 1, 'L');
+}
+
+// Fill remaining rows to ensure at least 15 or more lines
+$rowsPrinted = count($historial);
+$minRows = 15;
+$emptyRows = $minRows - $rowsPrinted;
+if ($emptyRows < 0) $emptyRows = 5; // Always add a few empty if list is long? Prompt says "al menos 15 filas vacías". Assuming total additional space.
+
+for ($i = 0; $i < 15; $i++) {
+    $pdf->Cell($wFecha, 6, '', 1, 0, 'C');
+    $pdf->Cell($wRecibo, 6, '', 1, 0, 'C');
+    $pdf->Cell($wLecAny, 6, '', 1, 0, 'C');
+    $pdf->Cell($wLecAct, 6, '', 1, 0, 'C');
+    $pdf->Cell($wConsum, 6, '', 1, 0, 'C');
+    $pdf->Cell($wCargos, 6, '', 1, 0, 'R');
+    $pdf->Cell($wRecarg, 6, '', 1, 0, 'R');
+    $pdf->Cell($wCredit, 6, '', 1, 0, 'R');
+    $pdf->Cell($wSaldo, 6, '', 1, 0, 'R');
+    $pdf->Cell($wObs, 6, '', 1, 1, 'L');
+}
+
+$pdf->Output('I', 'Historial_' . $usuario['no_contrato'] . '.pdf');
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Historial de Lecturas - <?php echo htmlspecialchars($userInfo['nombre']); ?></title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            color: #1f2937;
-            background: white;
-            padding: 2mm; /* Margen para impresión */
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 2rem;
-            border-bottom: 2px solid #1e40af;
-            padding-bottom: 1rem;
-        }
-        .header h1 {
-            color: #1e40af;
-            margin: 0;
-            font-size: 1.5rem;
-            text-transform: uppercase;
-        }
-        .logo-text {
-            color: #0ea5e9; 
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-        .user-info {
-            background: #f8fafc;
-            padding: 1rem;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            margin-bottom: 2rem;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-        .info-row span:first-child {
-            font-weight: 600;
-            color: #64748b;
-        }
-        .info-row span:last-child {
-            font-weight: 700;
-            color: #1e293b;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-        }
-        
-        thead th {
-            text-align: left;
-            padding: 0.75rem;
-            background-color: #1e40af; /* Azul fuerte para encabezado */
-            color: white;
-            font-weight: 600;
-            border: 1px solid #1e40af;
-        }
-        
-        tbody td {
-            padding: 0.75rem;
-            border: 1px solid #e2e8f0;
-            color: #334155;
-        }
-        
-        tbody tr:nth-child(even) {
-            background-color: #f8fafc;
-        }
-        
-        .status-badge {
-            padding: 0.2rem 0.6rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            display: inline-block;
-        }
-        .status-pagado {
-            background-color: #dcfce7;
-            color: #166534;
-        }
-        .status-pendiente {
-            background-color: #ffedd5;
-            color: #9a3412;
-        }
-        .status-sin-factura {
-            background-color: #f1f5f9;
-            color: #64748b;
-        }
-
-        .footer {
-            margin-top: 2rem;
-            text-align: center;
-            font-size: 0.8rem;
-            color: #9ca3af;
-            border-top: 1px solid #e2e8f0;
-            padding-top: 1rem;
-        }
-        
-        @media print {
-            body { 
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact; 
-            }
-            .no-print {
-                display: none;
-            }
-        }
-    </style>
-</head>
-<body onload="window.print()">
-
-    <div class="header">
-        <div class="logo-text">SAPAZ - SISTEMA DE AGUA POTABLE</div>
-        <h1>Historial de Consumo y Pagos</h1>
-        <p style="margin:0.2rem 0; color:#64748b; font-size:0.9rem;">Fecha de Emisión: <?php echo date('d/m/Y H:i'); ?></p>
-    </div>
-
-    <div class="user-info">
-        <div class="info-row">
-            <span>Usuario:</span>
-            <span><?php echo htmlspecialchars($userInfo['nombre']); ?></span>
-        </div>
-        <div class="info-row">
-            <span>Contrato:</span>
-            <span><?php echo htmlspecialchars($userInfo['no_contrato']); ?></span>
-        </div>
-        <div class="info-row">
-            <span>Medidor:</span>
-            <span><?php echo htmlspecialchars($userInfo['no_medidor'] ?? 'N/A'); ?></span>
-        </div>
-        <div class="info-row">
-            <span>Dirección:</span>
-            <span><?php echo htmlspecialchars($userInfo['calle'] . ' ' . $userInfo['barrio']); ?></span>
-        </div>
-    </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Periodo / Fecha</th>
-                <th>Lecturas (Ant - Act)</th>
-                <th>Consumo (m³)</th>
-                <th>Estado</th>
-                <th style="text-align:right;">Monto</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if (count($historial) > 0): ?>
-                <?php foreach ($historial as $h): 
-                    $fecha = date('d/m/Y', strtotime($h['fecha_lectura']));
-                    $estatus = 'Sin Factura';
-                    $clase = 'status-sin-factura';
-                    $monto = '-';
-
-                    if ($h['id_factura']) {
-                        $estatus = $h['estado_factura'];
-                        $monto = '$' . number_format($h['monto_total'], 2);
-                        if ($estatus === 'Pagado') $clase = 'status-pagado';
-                        else if ($estatus === 'Pendiente') $clase = 'status-pendiente';
-                    }
-                ?>
-                <tr>
-                    <td>
-                        <strong><?php echo $fecha; ?></strong>
-                    </td>
-                    <td>
-                        <?php echo $h['lectura_anterior']; ?> - <?php echo $h['lectura_actual']; ?>
-                    </td>
-                    <td>
-                        <strong><?php echo $h['consumo_m3']; ?></strong>
-                    </td>
-                    <td>
-                        <span class="status-badge <?php echo $clase; ?>">
-                            <?php echo $estatus; ?>
-                        </span>
-                    </td>
-                    <td style="text-align:right;">
-                        <?php echo $monto; ?>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <tr>
-                    <td colspan="5" style="text-align:center; padding: 2rem;">No se encontraron registros.</td>
-                </tr>
-            <?php endif; ?>
-        </tbody>
-    </table>
-
-    <div class="footer">
-        Este documento es un reporte informativo generado automáticamente por el sistema.
-    </div>
-
-</body>
-</html>

@@ -150,6 +150,68 @@
     background: rgba(220, 38, 38, 0.1);
 }
 
+/* Estilos especiales para campos destacados */
+.card-contrato {
+    font-size: 1.3rem !important;
+    font-weight: 800 !important;
+    color: #1e3a8a !important;
+    letter-spacing: 0.5px;
+}
+
+.beneficiary-name {
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    text-align: center;
+}
+
+.beneficiary-medidor {
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    text-align: center;
+}
+
+/* Animación de carga para el buscador */
+@keyframes searchPulse {
+
+    0%,
+    100% {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+    }
+
+    50% {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+    }
+}
+
+.form-control.searching {
+    animation: searchPulse 1.5s ease-in-out infinite;
+    background: linear-gradient(90deg, #ffffff 0%, #f0f9ff 50%, #ffffff 100%);
+    background-size: 200% 100%;
+    animation: searchPulse 1.5s ease-in-out infinite, shimmer 2s linear infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
 /* Header Card */
 .beneficiary-header {
     background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
@@ -204,7 +266,7 @@
     .card-body {
         flex: 1;
         display: grid;
-        grid-template-columns: repeat(7, 1fr);
+        grid-template-columns: 1fr 1.5fr 1.3fr 1fr 0.8fr 0.8fr 0.8fr;
         gap: 1rem;
         align-items: center;
     }
@@ -248,7 +310,7 @@
     .beneficiary-header .card-body {
         flex: 1;
         display: grid;
-        grid-template-columns: repeat(8, 1fr);
+        grid-template-columns: 1fr 1.5fr 1.3fr 1fr 0.8fr 0.8fr 0.8fr;
         gap: 1rem;
         align-items: center;
     }
@@ -1408,6 +1470,7 @@
         margin-bottom: 0.5rem;
     }
 }
+
 .lecturas-modal-body {
     background-color: #ffffff;
 }

@@ -1,0 +1,245 @@
+/* Inicio Page Styles */
+
+/* Hide Sidebar specifically on this page */
+.inicio-page #sidebar {
+    transform: translateX(-280px);
+    /* Move completely off screen */
+    box-shadow: none;
+}
+
+/* Show Sidebar when active */
+.inicio-page #sidebar.active {
+    transform: translateX(0);
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Adjust Main Content to be full width */
+.inicio-page .main-content {
+    margin-left: 0 !important;
+    width: 100%;
+    min-height: calc(100vh - 70px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    background: #f0f2f5;
+    /* Light subtle background */
+}
+
+/* Welcome Section */
+.welcome-container {
+    text-align: center;
+    margin-bottom: 3rem;
+    animation: fadeInDown 0.8s ease-out;
+}
+
+.welcome-title {
+    font-size: 3rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #1F4E79 0%, #4FA3D1 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 1rem;
+    letter-spacing: -1px;
+}
+
+.welcome-subtitle {
+    font-size: 1.2rem;
+    color: #64748b;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Menu Grid */
+.menu-cards-container {
+    display: grid;
+    /* Force 3 columns on large screens, adapt on smaller */
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2.5rem;
+    width: 95%;
+    /* Wider container */
+    max-width: 1600px;
+    perspective: 1000px;
+}
+
+/* Card Styles */
+.menu-card {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    border-radius: 24px;
+    padding: 3.5rem 2.5rem;
+    /* Larger padding */
+    text-decoration: none;
+    color: #1e293b;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    position: relative;
+    overflow: hidden;
+    animation: fadeInUp 0.6s ease-out backwards;
+    min-height: 300px;
+    /* Minimum height for uniform large cards */
+    justify-content: center;
+}
+
+/* Staggered animation delays */
+.menu-card:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.menu-card:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.menu-card:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+.menu-card:nth-child(4) {
+    animation-delay: 0.4s;
+}
+
+.menu-card:nth-child(5) {
+    animation-delay: 0.5s;
+}
+
+.menu-card:nth-child(6) {
+    animation-delay: 0.6s;
+}
+
+.menu-card:nth-child(7) {
+    animation-delay: 0.7s;
+}
+
+.menu-card:hover {
+    transform: translateY(-12px) scale(1.02);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Icon Styles */
+.card-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    font-size: 2.5rem;
+    color: white;
+    transition: transform 0.3s ease;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.menu-card:hover .card-icon {
+    transform: rotate(5deg) scale(1.1);
+}
+
+/* Typography in cards */
+.card-info h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #334155;
+}
+
+.card-info p {
+    font-size: 0.95rem;
+    color: #64748b;
+    line-height: 1.5;
+}
+
+/* Color Variants */
+.menu-card.color-blue .card-icon {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);
+}
+
+.menu-card.color-purple .card-icon {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    box-shadow: 0 10px 20px rgba(124, 58, 237, 0.3);
+}
+
+.menu-card.color-indigo .card-icon {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
+}
+
+.menu-card.color-green .card-icon {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 10px 20px rgba(5, 150, 105, 0.3);
+}
+
+.menu-card.color-teal .card-icon {
+    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+    box-shadow: 0 10px 20px rgba(13, 148, 136, 0.3);
+}
+
+.menu-card.color-orange .card-icon {
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    box-shadow: 0 10px 20px rgba(234, 88, 12, 0.3);
+}
+
+.menu-card.color-gray .card-icon {
+    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+    box-shadow: 0 10px 20px rgba(71, 85, 105, 0.3);
+}
+
+.menu-card.color-red .card-icon {
+    background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+    box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3);
+}
+
+/* Animations */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .menu-cards-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .menu-cards-container {
+        grid-template-columns: 1fr;
+        width: 90%;
+        gap: 1.5rem;
+    }
+
+    .welcome-title {
+        font-size: 2rem;
+    }
+
+    .menu-card {
+        padding: 2.5rem 2rem;
+        min-height: auto;
+    }
+}

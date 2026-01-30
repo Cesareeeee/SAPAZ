@@ -10,8 +10,8 @@ require_once '../controladores/beneficiarios.php';
     <title>SAPAZ - Beneficiarios</title>
     <link rel="icon" href="../recursos/imagenes/SAPAZ.jpeg" type="image/jpeg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../recursos/estilos/panel_admin.css?v=2.002">
-    <link rel="stylesheet" href="../recursos/estilos/clientes.css?v=342222223483">
+    <link rel="stylesheet" href="../recursos/estilos/panel_admin.css?v=2.0327">
+    <link rel="stylesheet" href="../recursos/estilos/clientes.css?v=4.0129">
 </head>
 <body>
    
@@ -38,18 +38,18 @@ require_once '../controladores/beneficiarios.php';
                     <div class="form-row"> 
                         <div class="form-group">
                             <label for="beneficiaryName">Nombre Completo</label>
-                            <input type="text" class="form-control" id="beneficiaryName" name="beneficiaryName" placeholder="Nombre del beneficiario">
+                            <input type="text" class="form-control" id="beneficiaryName" name="beneficiaryName" placeholder="Nombre del beneficiario" spellcheck="true" lang="es">
                         </div>
                         <div class="form-group">
                             <label for="contractNumber">Número de Contrato</label>
-                            <input type="number" class="form-control" id="contractNumber" name="contractNumber" placeholder="Número de contrato">
+                            <input type="number" class="form-control" id="contractNumber" name="contractNumber" placeholder="Número de contrato" maxlength="4">
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label for="meterNumber">Número de Medidor</label>
-                            <input type="number" class="form-control" id="meterNumber" name="meterNumber" placeholder="Número de medidor">
+                            <input type="number" class="form-control" id="meterNumber" name="meterNumber" placeholder="Número de medidor" maxlength="8">
                         </div>
                         <div class="form-group">
                             <label for="streetAndNumber">Calle</label>
@@ -106,25 +106,25 @@ require_once '../controladores/beneficiarios.php';
                     <div class="beneficiary-header">
                         <div class="card-body">
                             <div class="card-item">
-                                <div class="card-label"># Beneficiario</div>
+                                <div class="card-label">Contrato</div>
                             </div>
                             <div class="card-item">
                                 <div class="card-label"><i class="fas fa-user"></i> Nombre</div>
                             </div>
                             <div class="card-item">
-                                <div class="card-label"><i class="fas fa-map-marker-alt"></i> Calle, Barrio</div>
-                            </div>
-                            <div class="card-item">
-                                <div class="card-label">Contrato</div>
-                            </div>
-                            <div class="card-item">
                                 <div class="card-label"><i class="fas fa-tachometer-alt"></i> Medidor</div>
+                            </div>
+                            <div class="card-item">
+                                <div class="card-label"><i class="fas fa-map-marker-alt"></i> Calle, Barrio</div>
                             </div>
                             <div class="card-item">
                                 <div class="card-label">Fecha Alta</div>
                             </div>
                             <div class="card-item">
                                 <div class="card-label">Estado</div>
+                            </div>
+                            <div class="card-item">
+                                <div class="card-label"># Beneficiario</div>
                             </div>
                             <div class="card-item">
                                 <div class="card-label">Acciones</div>
@@ -186,17 +186,17 @@ require_once '../controladores/beneficiarios.php';
                             <i class="fas fa-history"></i> Beneficiario anterior: <span id="previousNameDisplay"></span>
                         </div>
                         <label for="editBeneficiaryName"><i class="fas fa-user"></i> Nombre Completo</label>
-                        <input type="text" id="editBeneficiaryName" name="beneficiaryName" required class="form-control">
+                        <input type="text" id="editBeneficiaryName" name="beneficiaryName" required class="form-control" spellcheck="true" lang="es">
                     </div>
 
                     <div class="edit-field-group">
                         <label for="editContractNumber"><i class="fas fa-file-contract"></i> Número de Contrato</label>
-                        <input type="number" id="editContractNumber" name="contractNumber" required class="form-control">
+                        <input type="number" id="editContractNumber" name="contractNumber" required class="form-control" maxlength="4">
                     </div>
 
                     <div class="edit-field-group">
                         <label for="editMeterNumber"><i class="fas fa-tachometer-alt"></i> Número de Medidor</label>
-                        <input type="number" id="editMeterNumber" name="meterNumber" required class="form-control">
+                        <input type="number" id="editMeterNumber" name="meterNumber" required class="form-control" maxlength="8">
                     </div>
 
                      <div class="edit-field-group">
@@ -310,7 +310,8 @@ require_once '../controladores/beneficiarios.php';
         </div>
     </div>
 
-    <script src="../recursos/scripts/panel_admin.js?v=2.002"></script>
-    <script src="../recursos/scripts/validacion_beneficiarios.js?v=3464"></script>
+    <script src="../recursos/scripts/panel_admin.js?v=2.0327"></script>
+    <script src="../recursos/scripts/spellcheck.js?v=3.0327"></script>
+    <script src="../recursos/scripts/validacion_beneficiarios.js?v=5.0129"></script>
 </body>
 </html>

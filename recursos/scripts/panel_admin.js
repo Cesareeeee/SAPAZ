@@ -188,14 +188,16 @@ if (fechaLectura) {
 }
 
 // Cerrar Sesión con Modal Profesional
-const btnCerrarSesion = document.getElementById('btnCerrarSesion');
-if (btnCerrarSesion) {
-    btnCerrarSesion.addEventListener('click', (e) => {
+// Cerrar Sesión con Modal Profesional
+document.addEventListener('click', function (e) {
+    const btnCerrarSesion = e.target.closest('#btnCerrarSesion');
+    if (btnCerrarSesion) {
         e.preventDefault();
+        // continuación...
 
         // Crear modal personalizado
         const modalHTML = `
-            <div class="logout-modal-overlay" id="logoutModalOverlay">
+            <div class="logout-modal-overlay" id="logoutModalOverlay" style="z-index: 99999;">
                 <div class="logout-modal">
                     <div class="logout-modal-header">
                         <div class="logout-modal-icon">
@@ -269,5 +271,5 @@ if (btnCerrarSesion) {
                 closeModal();
             }
         });
-    });
-}
+    }
+});

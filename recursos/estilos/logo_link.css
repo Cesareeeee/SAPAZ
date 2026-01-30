@@ -1,0 +1,31 @@
+/* Logo Link Styling */
+.logo-link {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    text-decoration: none;
+    color: inherit;
+    transition: opacity 0.3s ease;
+}
+
+.logo-link:hover {
+    opacity: 0.9;
+}
+
+/* Ensure children maintain their styles */
+.logo-link i {
+    font-size: 2rem;
+    color: var(--accent-color);
+}
+
+.logo-link h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--white);
+}
+
+/* Override existing selector to ensure specificity if needed, though structure change should handle it */
+.logo>i {
+    display: none;
+    /* Hide direct children if any remain, as they should be in link */
+}

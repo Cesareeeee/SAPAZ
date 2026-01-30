@@ -1,4 +1,7 @@
-<?php require_once '../includes/validar_sesion.php'; ?>
+<?php 
+require_once '../includes/validar_sesion.php';
+require_once '../includes/validar_admin.php';
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -9,8 +12,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../recursos/estilos/panel_admin.css?v=2.002">
-    <link rel="stylesheet" href="../recursos/estilos/facturacion.css?v=4.40127">
-    <link rel="stylesheet" href="../recursos/estilos/reportes_facturacion.css?v=1.20227">
+    <link rel="stylesheet" href="../recursos/estilos/facturacion.css?v=4.402">
+    <link rel="stylesheet" href="../recursos/estilos/reportes_facturacion.css?v=1.203">
 </head>
 <body>
   
@@ -226,7 +229,7 @@
 
         <!-- TAB 2: REPORTES Y ESTADO DE CUENTA -->
         <div id="tab-reports" class="tab-content">
-            <div class="reports-container" style="height: auto; max-height: calc(100vh - 200px); display: flex; flex-direction: column;">
+            <div class="reports-container" style="height: auto; display: flex; flex-direction: column;">
                 <div class="reports-header">
                     <div>
                         <h3 class="rate-config-title">Estado de pago de Usuarios</h3>
@@ -268,24 +271,24 @@
                     </div>
                 </div>
                 
-                <div class="reports-results" style="overflow-y: auto; flex: 1;">
+                <div class="reports-results" style="padding: 1rem; background: #f1f5f9;">
                     <!-- Cards Grid Container -->
                     <div id="reportResultsGrid" class="beneficiaries-grid">
                         <!-- JS fill -->
                     </div>
-                </div>
-            </div>
 
-            <!-- Pagination Footer (Moved Outside) -->
-            <div style="padding: 1rem; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 12px; margin-top: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
-                <span id="reportPageIndicator" style="font-weight: 600; color: #64748b;">Página 1</span>
-                <div style="display: flex; gap: 0.5rem;">
-                    <button id="btnPrevReportPage" class="btn-history-card" disabled>
-                        <i class="fas fa-chevron-left"></i> Anterior
-                    </button>
-                    <button id="btnNextReportPage" class="btn-history-card">
-                        Siguiente <i class="fas fa-chevron-right"></i>
-                    </button>
+                    <!-- Pagination Footer inside scroll area -->
+                    <div style="padding: 1rem; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 12px; margin-top: 1rem;">
+                        <span id="reportPageIndicator" style="font-weight: 600; color: #64748b;">Página 1</span>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button id="btnPrevReportPage" class="btn-history-card" disabled>
+                                <i class="fas fa-chevron-left"></i> Anterior
+                            </button>
+                            <button id="btnNextReportPage" class="btn-history-card">
+                                Siguiente <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -325,8 +328,8 @@
         </div>
     </div>
 
-    <script src="../recursos/scripts/panel_admin.js"></script>
-    <script src="../recursos/scripts/facturacion.js?v=4.6100"></script>
-    <script src="../recursos/scripts/reportes_facturacion.js?v=1.3100"></script>
+    <script src="../recursos/scripts/panel_admin.js?v=2.003"></script>
+    <script src="../recursos/scripts/facturacion.js?v=4.6101"></script>
+    <script src="../recursos/scripts/reportes_facturacion.js?v=1.3101"></script>
 </body>
 </html>

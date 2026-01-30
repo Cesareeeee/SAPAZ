@@ -7,7 +7,7 @@
     <link rel="icon" href="../recursos/imagenes/SAPAZ.jpeg" type="image/jpeg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../recursos/estilos/auth.css?v=2.0">
+    <link rel="stylesheet" href="../recursos/estilos/auth.css?v=2.022">
 </head>
 <body>
     <div class="auth-container">
@@ -27,9 +27,10 @@
                     <i class="fas fa-user input-icon"></i>
                 </div>
                 
-                <div class="input-group">
-                    <input type="password" name="password" class="auth-input" placeholder="Contraseña" required autocomplete="current-password">
+                <div class="input-group password-group">
+                    <input type="password" name="password" id="passwordInput" class="auth-input" placeholder="Contraseña" required autocomplete="current-password">
                     <i class="fas fa-lock input-icon"></i>
+                    <i class="fas fa-eye toggle-password" id="togglePassword"></i>
                 </div>
 
                 <div class="remember-me-container">
@@ -46,16 +47,9 @@
                     Ingresar <i class="fas fa-arrow-right"></i>
                 </button>
             </form>
-
-            <div class="auth-footer">
-                <p style="color: var(--text-secondary); font-size: 0.9rem;">
-                    ¿No tienes una cuenta? 
-                    <a href="registro.php" class="auth-link">Regístrate aquí</a>
-                </p>
-            </div>
         </div>
     </div>
 
-    <script src="../recursos/scripts/auth.js?v=2.0"></script>
+    <script src="../recursos/scripts/auth.js?v=2.022"></script>
 </body>
 </html>
